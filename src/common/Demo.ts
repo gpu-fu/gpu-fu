@@ -75,9 +75,17 @@ async function getCanvasContext(
 
   canvasContext.configure({
     device,
-    format: (navigator.gpu.getPreferredCanvasFormat || (() => "rgba8unorm"))(),
+    format: getPreferredCanvasFormat(),
     alphaMode: "opaque",
   })
 
   return canvasContext
+}
+
+function getPreferredCanvasFormat() {
+  if (navigator.gpu?.getPreferredCanvasFormat)
+    return navigator.gpu.getPreferredCanvasFormat()
+
+  // Hard-coded default for browsers that don't implement this function yet.
+  return "rgba8unorm"
 }
