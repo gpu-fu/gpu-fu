@@ -83,8 +83,10 @@ async function getCanvasContext(
 }
 
 function getPreferredCanvasFormat() {
-  if (navigator.gpu?.getPreferredCanvasFormat)
-    return navigator.gpu.getPreferredCanvasFormat()
+  // Some browsers throw an "Illegal invocation" error if we don't bind.
+  const getPreferredCanvasFormat =
+    navigator.gpu?.getPreferredCanvasFormat?.bind(navigator.gpu)
+  if (getPreferredCanvasFormat) return getPreferredCanvasFormat()
 
   // Hard-coded default for browsers that don't implement this function yet.
   return "rgba8unorm"
