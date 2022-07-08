@@ -8,16 +8,20 @@
     "allowJs": false,
     "noImplicitAny": true,
     "noImplicitThis": true,
-    "noUnusedLocals": true,
     "strictBindCallApply": true,
     "strictFunctionTypes": true,
     "strictNullChecks": true,
     "strictPropertyInitialization": true,
     "allowSyntheticDefaultImports": true,
 
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+
     "module": "es6",
     "moduleResolution": "node",
     "esModuleInterop": false,
     "lib": ["es2015", "dom"],
   },
+
+  "exclude": ["*.wgsl"]
 }
