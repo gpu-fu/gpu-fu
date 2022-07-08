@@ -12,6 +12,7 @@ export default abstract class Demo {
     run(): void;
     private runFrameRepeatedly;
     runCommand(fn: (commandEncoder: GPUCommandEncoder) => unknown): void;
+    autoLayout(): "auto";
 }
 export declare function runDemo<T extends Demo>(type: {
     new (props: DemoProps): T;
