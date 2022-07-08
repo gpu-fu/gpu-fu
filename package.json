@@ -1,0 +1,26 @@
+{
+  "name": "webgpu-tools",
+  "version": "0.1.0",
+  "description": "Tools and experimentation with WebGPU shaders.",
+  "main": "src/main.ts",
+  "repository": "git@github.com:jemc/webgpu-tools.git",
+  "author": "Joe Eli McIlvain <joe.eli.mac@gmail.com>",
+  "license": "BSD-3-Clause",
+  "private": true,
+  "scripts": {
+    "build": "rm -rf dist && webpack",
+    "start": "webpack serve"
+  },
+  "prettier": {
+    "semi": false
+  },
+  "devDependencies": {
+    "@webgpu/types": "^0.1.21",
+    "prettier": "^2.7.1",
+    "ts-loader": "^9.3.1",
+    "typescript": "^4.7.4",
+    "webpack": "^5.73.0",
+    "webpack-cli": "^4.10.0",
+    "webpack-dev-server": "^4.9.3"
+  }
+}

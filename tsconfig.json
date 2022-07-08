@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist/",
+    "sourceMap": true,
+    "declaration": true,
+
+    "alwaysStrict": true,
+    "allowJs": false,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
+    "strictNullChecks": true,
+    "strictPropertyInitialization": true,
+    "allowSyntheticDefaultImports": true,
+
+    "module": "es6",
+    "moduleResolution": "node",
+    "esModuleInterop": false,
+    "lib": ["es2015", "dom"],
+  },
+}
