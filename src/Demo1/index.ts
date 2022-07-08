@@ -3,7 +3,7 @@
 import Demo, { runDemo } from "../common/Demo"
 
 import SimpleTriangle from "./shaders/vertex/SimpleTriangle.wgsl"
-import UniformGreen from "./shaders/fragment/UniformGreen.wgsl"
+import ColorByPosition from "./shaders/fragment/ColorByPosition.wgsl"
 
 runDemo(
   class Demo1 extends Demo {
@@ -16,7 +16,7 @@ runDemo(
           entryPoint: "main",
         },
         fragment: {
-          module: this.device.createShaderModule({ code: UniformGreen }),
+          module: this.device.createShaderModule({ code: ColorByPosition }),
           entryPoint: "main",
           targets: [
             {
