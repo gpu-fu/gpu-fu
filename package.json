@@ -8,8 +8,9 @@
   "private": true,
   "scripts": {
     "clean": "rm -f dist/*.js* dist/*.ts*",
-    "build": "yarn clean && webpack",
-    "start": "webpack serve"
+    "assets": "cd dist/assets && sh ./fetch.sh",
+    "build": "yarn clean && yarn assets && webpack",
+    "start": "yarn build && webpack serve"
   },
   "prettier": {
     "semi": false

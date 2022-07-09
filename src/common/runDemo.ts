@@ -1,59 +1,27 @@
 /// <reference types="@webgpu/types" />
 
-export interface DemoProps {
-  device: GPUDevice
+import Context from "../gpu-fu/Context"
+
+type FrameFn = (ctx: Context, frame: number) => void
+type SetupFn = (
+  device: GPUDevice,
   canvasContext: GPUCanvasContext
-}
+) => Promise<FrameFn>
 
-export default abstract class Demo {
-  device: GPUDevice
-  canvasContext: GPUCanvasContext
-
-  constructor(props: DemoProps) {
-    this.device = props.device
-    this.canvasContext = props.canvasContext
-  }
-
-  abstract setup(): Promise<unknown>
-  abstract frame(): unknown
-
-  async run() {
-    await this.setup()
-
-    requestAnimationFrame(this.runFrameRepeatedly.bind(this))
-  }
-
-  private runFrameRepeatedly() {
-    this.frame()
-
-    requestAnimationFrame(this.runFrameRepeatedly.bind(this))
-  }
-
-  runCommand(fn: (commandEncoder: GPUCommandEncoder) => unknown) {
-    const commandEncoder = this.device.createCommandEncoder()
-    fn(commandEncoder)
-    this.device.queue.submit([commandEncoder.finish()])
-  }
-
-  // Some browsers don't yet support the `layout: "auto"`, so for them
-  // we introduce this hack that pretends that `undefined` is that string
-  // at the TypeScript level, so that the browser can fill it in as the default,
-  // despite the types no longer allowing for it to be undefined.
-  //
-  // Eventually this hack will stop working and we'll just replace this
-  // with actually returning the string "auto" and it will be better.
-  autoLayout() {
-    return undefined as unknown as GPUAutoLayoutMode
-  }
-}
-
-export function runDemo<T extends Demo>(type: { new (props: DemoProps): T }) {
+export default function runDemo(setupFn: SetupFn) {
   ;(async () => {
     const device = await getDevice()
     const canvasContext = await getCanvasContext("canvas.main", device)
 
-    const demo = new type({ device, canvasContext })
-    await demo.run()
+    const frameFn = await setupFn(device, canvasContext)
+
+    var frame = 0
+    function repeatFrameWithContext() {
+      frame = frame + 1
+      runFrameWithContext(device, frame, frameFn)
+      requestAnimationFrame(repeatFrameWithContext)
+    }
+    requestAnimationFrame(repeatFrameWithContext)
   })().catch((error) => {
     document.querySelector("body")!.innerHTML = error
     console.error(error)
@@ -101,4 +69,14 @@ function getPreferredCanvasFormat() {
 
   // Hard-coded default for browsers that don't implement this function yet.
   return "rgba8unorm"
+}
+
+function runFrameWithContext(
+  device: GPUDevice,
+  frame: number,
+  frameFn: FrameFn
+) {
+  const commandEncoder = device.createCommandEncoder()
+  frameFn({ device, commandEncoder }, frame)
+  device.queue.submit([commandEncoder.finish()])
 }
