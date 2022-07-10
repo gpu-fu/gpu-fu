@@ -1,10 +1,10 @@
 /// <reference types="@webgpu/types" />
 
-import runDemo from "../common/runDemo"
+import runDemo from "./common/runDemo"
 
-import TextureSourceBitmap from "../gpu-fu/TextureSourceBitmap"
-import RenderTextureRect from "../gpu-fu/RenderTextureRect"
-import OutputCanvas from "../gpu-fu/OutputCanvas"
+import TextureSourceBitmap from "./gpu-fu/TextureSourceBitmap"
+import RenderTextureRect from "./gpu-fu/RenderTextureRect"
+import OutputCanvas from "./gpu-fu/OutputCanvas"
 
 runDemo(async (device, canvasContext) => {
   const textureSource = await TextureSourceBitmap.fromURL(

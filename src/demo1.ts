@@ -1,15 +1,14 @@
 /// <reference types="@webgpu/types" />
 
-import runDemo from "../common/runDemo"
+import runDemo from "./common/runDemo"
 
-import Render from "../gpu-fu/Render"
-import Context from "../gpu-fu/Context"
-import { autoLayout } from "../gpu-fu/utils"
+import Render from "./gpu-fu/Render"
+import Context from "./gpu-fu/Context"
+import { autoLayout } from "./gpu-fu/utils"
 
-import OutputCanvas from "../gpu-fu/OutputCanvas"
+import OutputCanvas from "./gpu-fu/OutputCanvas"
 
-import SimpleTriangle from "./shaders/vertex/SimpleTriangle.wgsl"
-import ColorByPosition from "./shaders/fragment/ColorByPosition.wgsl"
+import shaderModuleCode from "./demo1.wgsl"
 
 runDemo(async (device, canvasContext) => {
   const renderTriangle = new RenderColoredTriangle()
@@ -30,12 +29,12 @@ class RenderColoredTriangle implements Render {
 
     return (this._renderPipeline = ctx.device.createRenderPipeline({
       vertex: {
-        module: ctx.device.createShaderModule({ code: SimpleTriangle }),
-        entryPoint: "main",
+        module: ctx.device.createShaderModule({ code: shaderModuleCode }),
+        entryPoint: "vertexRenderColoredTriangle",
       },
       fragment: {
-        module: ctx.device.createShaderModule({ code: ColorByPosition }),
-        entryPoint: "main",
+        module: ctx.device.createShaderModule({ code: shaderModuleCode }),
+        entryPoint: "fragmentRenderColoredTriangle",
         targets: [
           {
             // TODO: Remove this hard-coded value - get the real one somehow.

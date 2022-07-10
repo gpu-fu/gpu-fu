@@ -3,8 +3,8 @@ const path = require("path")
 module.exports = {
   mode: "production",
   entry: {
-    Demo1: `./src/Demo1`,
-    Demo2: `./src/Demo2`,
+    demo1: `./src/demo1`,
+    demo2: `./src/demo2`,
   },
   output: {
     path: path.resolve(__dirname, "dist"),
