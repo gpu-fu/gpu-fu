@@ -7,11 +7,12 @@ export default class VertexSourceRect implements VertexSource {
   private _aspectFillRatio?: number
 
   private _buffer?: GPUBuffer
+  private _bufferUpToDate = false
 
   setAspectFillRatio(ratio: number) {
     if (this._aspectFillRatio === ratio) return
     this._aspectFillRatio = ratio
-    this._buffer = undefined
+    this._bufferUpToDate = false
   }
 
   private getBuffer(ctx: Context): GPUBuffer {
@@ -19,9 +20,14 @@ export default class VertexSourceRect implements VertexSource {
 
     const buffer = ctx.device.createBuffer({
       size: this.vertexSourceTotalBytes(ctx),
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     })
+
+    return (this._buffer = buffer)
+  }
+
+  private updateBuffer(ctx: Context) {
+    if (this._bufferUpToDate) return
 
     var uMin = 0
     var uMax = 1
@@ -39,7 +45,7 @@ export default class VertexSourceRect implements VertexSource {
     }
 
     // prettier-ignore
-    const data = [
+    const data = new Float32Array([
     // (x, y, z, w),  (u, v)
         1, 1, 0, 1, uMax, vMin,
        -1,-1, 0, 1, uMin, vMax,
@@ -47,12 +53,11 @@ export default class VertexSourceRect implements VertexSource {
         1, 1, 0, 1, uMax, vMin,
         1,-1, 0, 1, uMax, vMax,
        -1,-1, 0, 1, uMin, vMax,
-    ]
+    ])
 
-    new Float32Array(buffer.getMappedRange()).set(data)
-    buffer.unmap()
+    ctx.device.queue.writeBuffer(this.getBuffer(ctx), 0, data, 0, data.length)
 
-    return (this._buffer = buffer)
+    this._bufferUpToDate = true
   }
 
   vertexSourceAsGPUBuffer(ctx: Context): GPUBuffer {
@@ -65,6 +70,7 @@ export default class VertexSourceRect implements VertexSource {
   vertexSourceUVOffsetBytes = (ctx: Context) => 4 * 4
 
   vertexSourceFrame(ctx: Context, frame: number) {
+    this.updateBuffer(ctx)
     return 6
   }
 }
