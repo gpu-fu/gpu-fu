@@ -7,9 +7,9 @@ export default abstract class Demo {
     device: GPUDevice;
     canvasContext: GPUCanvasContext;
     constructor(props: DemoProps);
-    abstract setup(): unknown;
+    abstract setup(): Promise<unknown>;
     abstract frame(): unknown;
-    run(): void;
+    run(): Promise<void>;
     private runFrameRepeatedly;
     runCommand(fn: (commandEncoder: GPUCommandEncoder) => unknown): void;
     autoLayout(): "auto";
