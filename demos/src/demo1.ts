@@ -1,12 +1,12 @@
 /// <reference types="@webgpu/types" />
 
-import runDemo from "./common/runDemo"
+import runDemo from "./runDemo"
 
-import Render from "./gpu-fu/Render"
-import Context from "./gpu-fu/Context"
-import { autoLayout } from "./gpu-fu/utils"
+import Render from "@gpu-fu/gpu-fu/src/Render" // TODO: fix import path
+import Context from "@gpu-fu/gpu-fu/src/Context" // TODO: fix import path
+import { autoLayout } from "@gpu-fu/gpu-fu/src/utils" // TODO: fix import path
 
-import OutputCanvas from "./gpu-fu/OutputCanvas"
+import OutputCanvas from "@gpu-fu/gpu-fu/src/OutputCanvas" // TODO: fix import path
 
 import shaderModuleCode from "./demo1.wgsl"
 

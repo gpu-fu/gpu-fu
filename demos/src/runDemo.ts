@@ -1,11 +1,11 @@
 /// <reference types="@webgpu/types" />
 
-import Context from "../gpu-fu/Context"
+import Context from "@gpu-fu/gpu-fu/src/Context" // TODO: fix import path
 
 type FrameFn = (ctx: Context, frame: number) => void
 type SetupFn = (
   device: GPUDevice,
-  canvasContext: GPUCanvasContext
+  canvasContext: GPUCanvasContext,
 ) => Promise<FrameFn>
 
 export default function runDemo(setupFn: SetupFn) {
@@ -29,7 +29,7 @@ export default function runDemo(setupFn: SetupFn) {
 }
 
 async function getDevice(
-  powerPreference: GPUPowerPreference = "high-performance"
+  powerPreference: GPUPowerPreference = "high-performance",
 ): Promise<GPUDevice> {
   if (!navigator.gpu)
     throw new Error("Your browser doesn't have WebGPU enabled!")
@@ -42,10 +42,10 @@ async function getDevice(
 
 async function getCanvasContext(
   querySelector: string,
-  device: GPUDevice
+  device: GPUDevice,
 ): Promise<GPUCanvasContext> {
   const canvas = document.querySelector(
-    querySelector
+    querySelector,
   ) as HTMLCanvasElement | null
   if (!canvas) throw new Error("The main canvas wasn't found in the HTML!")
 
@@ -74,7 +74,7 @@ function getPreferredCanvasFormat() {
 function runFrameWithContext(
   device: GPUDevice,
   frame: number,
-  frameFn: FrameFn
+  frameFn: FrameFn,
 ) {
   const commandEncoder = device.createCommandEncoder()
   frameFn({ device, commandEncoder }, frame)

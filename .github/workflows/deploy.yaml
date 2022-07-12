@@ -15,9 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - run: yarn install --immutable --immutable-cache --check-cache
-      - run: yarn build
+      - run: cd demos && yarn install --immutable --immutable-cache --check-cache
+      - run: cd demos && yarn build
 
       - uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: dist
+          folder: demos/dist

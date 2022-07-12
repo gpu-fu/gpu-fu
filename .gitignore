@@ -1,4 +1,4 @@
-/node_modules
-/dist/**/*.js*
-/dist/**/*.ts*
-/dist/assets
+node_modules
+*/dist/**/*.js*
+*/dist/**/*.ts*
+*/dist/assets
