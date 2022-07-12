@@ -13,7 +13,8 @@
     "start": "yarn build && webpack serve"
   },
   "prettier": {
-    "semi": false
+    "semi": false,
+    "trailingComma": "all"
   },
   "devDependencies": {
     "@webgpu/types": "^0.1.21",
