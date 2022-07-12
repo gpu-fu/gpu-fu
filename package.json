@@ -1,8 +1,8 @@
 {
-  "name": "webgpu-tools",
+  "name": "gpu-fu",
   "version": "0.1.0",
-  "description": "Tools and experimentation with WebGPU shaders.",
-  "repository": "git@github.com:jemc/webgpu-tools.git",
+  "description": "WebGPU made easy: simple, composable Functional Units",
+  "repository": "git@github.com:gpu-fu/gpu-fu.git",
   "author": "Joe Eli McIlvain <joe.eli.mac@gmail.com>",
   "license": "BSD-3-Clause",
   "private": true,
