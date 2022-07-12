@@ -5,6 +5,7 @@ module.exports = {
   entry: {
     demo1: `./src/demo1`,
     demo2: `./src/demo2`,
+    demo3: `./src/demo3`,
   },
   output: {
     path: path.resolve(__dirname, "dist"),
@@ -27,7 +28,8 @@ module.exports = {
     static: {
       directory: path.join(__dirname, "dist"),
     },
-    liveReload: true,
+    // liveReload: true,
+    liveReload: false,
     compress: true,
     port: 9000,
   },
