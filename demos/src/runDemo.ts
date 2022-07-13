@@ -1,6 +1,6 @@
 /// <reference types="@webgpu/types" />
 
-import Context from "@gpu-fu/gpu-fu/src/Context" // TODO: fix import path
+import { Context } from "@gpu-fu/gpu-fu"
 
 type FrameFn = (ctx: Context, frame: number) => void
 type SetupFn = (

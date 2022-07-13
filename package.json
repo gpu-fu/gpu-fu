@@ -2,6 +2,7 @@
   "private": true,
   "workspaces": [
     "gpu-fu",
+    "incubator",
     "demos"
   ]
 }

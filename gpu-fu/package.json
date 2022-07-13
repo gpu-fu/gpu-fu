@@ -5,13 +5,6 @@
   "repository": "git@github.com:gpu-fu/gpu-fu.git",
   "author": "Joe Eli McIlvain <joe.eli.mac@gmail.com>",
   "license": "BSD-3-Clause",
-  "private": true,
-  "scripts": {
-    "clean": "rm -f dist/*.js* dist/*.ts*",
-    "assets": "cd dist/assets && sh ./fetch.sh",
-    "build": "yarn clean && yarn assets && webpack",
-    "start": "yarn build && webpack serve"
-  },
   "prettier": {
     "semi": false,
     "trailingComma": "all"
@@ -23,7 +16,6 @@
     "ts-loader": "^9.3.1",
     "typescript": "^4.7.4",
     "webpack": "^5.73.0",
-    "webpack-cli": "^4.10.0",
-    "webpack-dev-server": "^4.9.3"
+    "webpack-cli": "^4.10.0"
   }
 }

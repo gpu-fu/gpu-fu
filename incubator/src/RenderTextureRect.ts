@@ -1,9 +1,7 @@
 /// <reference types="@webgpu/types" />
 
-import Context from "./Context"
-import Render from "./Render"
+import { Context, Render, TextureSource } from "@gpu-fu/gpu-fu"
 import RenderUV from "./RenderUV"
-import TextureSource from "./TextureSource"
 import VertexSourceRect from "./VertexSourceRect"
 
 export default class RenderTextureRect implements Render {
@@ -23,7 +21,7 @@ export default class RenderTextureRect implements Render {
     // This doesn't yet work on the latest version of chromium, because
     // those chromium builds don't yet expose texture width and height.
     ;(this._renderUV.getVertexSource() as VertexSourceRect).setAspectFillRatio(
-      850 / 1275
+      850 / 1275,
     )
     this._renderUV.renderFrame(ctx, frame, target)
   }

@@ -1,7 +1,6 @@
 /// <reference types="@webgpu/types" />
 
-import Context from "./Context"
-import TextureSource from "./TextureSource"
+import { Context, TextureSource } from "@gpu-fu/gpu-fu"
 
 export default class TextureSourceBitmap implements TextureSource {
   private _imageBitmap: ImageBitmap
@@ -38,7 +37,7 @@ export default class TextureSourceBitmap implements TextureSource {
     ctx.device.queue.copyExternalImageToTexture(
       { source: this._imageBitmap },
       { texture: this._texture },
-      [this._imageBitmap.width, this._imageBitmap.height]
+      [this._imageBitmap.width, this._imageBitmap.height],
     )
 
     console.log(this._texture)

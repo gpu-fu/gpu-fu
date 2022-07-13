@@ -1,11 +1,13 @@
 /// <reference types="@webgpu/types" />
 
-import Context from "./Context"
-import TextureFilter from "./TextureFilter"
-import TextureSource from "./TextureSource"
+import {
+  Context,
+  TextureFilter,
+  TextureSource,
+  autoLayout,
+} from "@gpu-fu/gpu-fu"
 
 import shaderModuleCode3x3 from "./TextureFilterConvolve3x3.wgsl"
-import { autoLayout } from "./utils"
 
 interface SetKernelOptions {
   bias?: number

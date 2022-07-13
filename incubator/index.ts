@@ -1,0 +1,6 @@
+export { default as OutputCanvas } from "./src/OutputCanvas"
+export { default as RenderTextureRect } from "./src/RenderTextureRect"
+export { default as RenderUV } from "./src/RenderUV"
+export { default as TextureFilterConvolve } from "./src/TextureFilterConvolve"
+export { default as TextureSourceBitmap } from "./src/TextureSourceBitmap"
+export { default as VertexSourceRect } from "./src/VertexSourceRect"

@@ -2,11 +2,8 @@
 
 import runDemo from "./runDemo"
 
-import Render from "@gpu-fu/gpu-fu/src/Render" // TODO: fix import path
-import Context from "@gpu-fu/gpu-fu/src/Context" // TODO: fix import path
-import { autoLayout } from "@gpu-fu/gpu-fu/src/utils" // TODO: fix import path
-
-import OutputCanvas from "@gpu-fu/gpu-fu/src/OutputCanvas" // TODO: fix import path
+import { Context, Render, autoLayout } from "@gpu-fu/gpu-fu"
+import { OutputCanvas } from "@gpu-fu/incubator"
 
 import shaderModuleCode from "./demo1.wgsl"
 

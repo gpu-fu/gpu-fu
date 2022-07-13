@@ -1,7 +1,6 @@
 /// <reference types="@webgpu/types" />
 
-import Context from "./Context"
-import Render from "./Render"
+import { Context, Render } from "@gpu-fu/gpu-fu"
 
 export default class OutputCanvas {
   _canvasContext: GPUCanvasContext

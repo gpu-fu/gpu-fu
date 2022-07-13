@@ -1,7 +1,6 @@
 /// <reference types="@webgpu/types" />
 
-import Context from "./Context"
-import VertexSource from "./VertexSource"
+import { Context, VertexSource } from "@gpu-fu/gpu-fu"
 
 export default class VertexSourceRect implements VertexSource {
   private _aspectFillRatio?: number

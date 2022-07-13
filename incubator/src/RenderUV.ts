@@ -1,12 +1,14 @@
 /// <reference types="@webgpu/types" />
 
-import Context from "./Context"
-import Render from "./Render"
-import VertexSource from "./VertexSource"
-import TextureSource from "./TextureSource"
+import {
+  Context,
+  Render,
+  VertexSource,
+  TextureSource,
+  autoLayout,
+} from "@gpu-fu/gpu-fu"
 
 import shaderModuleCode from "./RenderUV.wgsl"
-import { autoLayout } from "./utils"
 
 export default class RenderUV implements Render {
   private _vertexSource?: VertexSource
@@ -132,7 +134,7 @@ export default class RenderUV implements Render {
     passEncoder.setPipeline(this.getRenderPipeline(ctx))
     passEncoder.setVertexBuffer(
       0,
-      this.getVertexSource().vertexSourceAsGPUBuffer(ctx)
+      this.getVertexSource().vertexSourceAsGPUBuffer(ctx),
     )
     passEncoder.setBindGroup(0, this.getBindGroup(ctx))
     passEncoder.draw(vertexCount, 1, 0, 0)
