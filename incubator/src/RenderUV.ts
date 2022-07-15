@@ -1,143 +1,141 @@
 /// <reference types="@webgpu/types" />
 
 import {
-  Context,
-  Render,
   VertexSource,
   TextureSource,
   autoLayout,
+  Context,
+  useGPUResource,
+  useGPUAction,
+  useProp,
+  useUnitProp,
 } from "@gpu-fu/gpu-fu"
 
 import shaderModuleCode from "./RenderUV.wgsl"
 
-export default class RenderUV implements Render {
-  private _vertexSource?: VertexSource
-  private _textureSource?: TextureSource
+export default function RenderUV(ctx: Context) {
+  const [vertexSource, setVertexSource] = useUnitProp<VertexSource>(ctx)
+  const [textureSource, setTextureSource] = useUnitProp<TextureSource>(ctx)
+  const [renderTarget, setRenderTarget] = useProp<GPUTexture>(ctx)
 
-  private _shaderModule?: GPUShaderModule
-  private _renderPipeline?: GPURenderPipeline
-  private _bindGroup?: GPUBindGroup
+  const textureSourceAsGPUTexture = textureSource?.textureSourceAsGPUTexture
 
-  getVertexSource(): VertexSource {
-    if (this._vertexSource) return this._vertexSource
-    throw new Error(`${this} has no _vertexSource`)
-  }
+  const shaderModule = useGPUResource(
+    ctx,
+    (ctx) =>
+      ctx.device.createShaderModule({
+        code: shaderModuleCode,
+      }),
+    [],
+  )
 
-  setVertexSource(vertexSource: VertexSource) {
-    this._vertexSource = vertexSource
-    this._renderPipeline = undefined
-    this._bindGroup = undefined
-  }
+  const renderPipeline = useGPUResource(
+    ctx,
+    (ctx) =>
+      vertexSource &&
+      ctx.device.createRenderPipeline({
+        vertex: {
+          module: shaderModule,
+          entryPoint: "vertexRenderUV",
+          buffers: [
+            {
+              arrayStride: vertexSource.vertexSourceStrideBytes,
+              attributes: [
+                {
+                  shaderLocation: 0,
+                  offset: vertexSource.vertexSourceXYZWOffsetBytes,
+                  format: "float32x4" as GPUVertexFormat,
+                },
+                {
+                  shaderLocation: 1,
+                  offset: vertexSource.vertexSourceUVOffsetBytes,
+                  format: "float32x2" as GPUVertexFormat,
+                },
+              ],
+            },
+          ],
+        },
+        fragment: {
+          module: shaderModule,
+          entryPoint: "fragmentRenderUV",
+          targets: [
+            {
+              // TODO: Remove this hard-coded value - get the real one somehow.
+              format: "rgba8unorm" as GPUTextureFormat,
+            },
+          ],
+        },
+        primitive: {
+          topology: "triangle-list",
+        },
+        layout: autoLayout(),
+      }),
+    [shaderModule, vertexSource],
+  )
 
-  getTextureSource(): TextureSource {
-    if (this._textureSource) return this._textureSource
-    throw new Error(`${this} has no _textureSource`)
-  }
+  const sampler = useGPUResource(
+    ctx,
+    (ctx) =>
+      ctx.device.createSampler({
+        magFilter: "linear",
+        minFilter: "linear",
+      }),
+    [],
+  )
 
-  setTextureSource(textureSource: TextureSource) {
-    this._textureSource = textureSource
-    this._renderPipeline = undefined
-    this._bindGroup = undefined
-  }
-
-  getShaderModule(ctx: Context): GPUShaderModule {
-    if (this._shaderModule) return this._shaderModule
-
-    return (this._shaderModule = ctx.device.createShaderModule({
-      code: shaderModuleCode,
-    }))
-  }
-
-  getRenderPipeline(ctx: Context): GPURenderPipeline {
-    if (this._renderPipeline) return this._renderPipeline
-
-    const vertexSource = this.getVertexSource()
-
-    return (this._renderPipeline = ctx.device.createRenderPipeline({
-      vertex: {
-        module: this.getShaderModule(ctx),
-        entryPoint: "vertexRenderUV",
-        buffers: [
+  const bindGroup = useGPUResource(
+    ctx,
+    (ctx) =>
+      renderPipeline &&
+      textureSourceAsGPUTexture &&
+      ctx.device.createBindGroup({
+        layout: renderPipeline.getBindGroupLayout(0),
+        entries: [
           {
-            arrayStride: vertexSource.vertexSourceStrideBytes(ctx),
-            attributes: [
-              {
-                shaderLocation: 0,
-                offset: vertexSource.vertexSourceXYZWOffsetBytes(ctx),
-                format: "float32x4" as GPUVertexFormat,
-              },
-              {
-                shaderLocation: 1,
-                offset: vertexSource.vertexSourceUVOffsetBytes(ctx),
-                format: "float32x2" as GPUVertexFormat,
-              },
-            ],
+            binding: 0,
+            resource: sampler,
+          },
+          {
+            binding: 1,
+            resource: textureSourceAsGPUTexture.createView(),
           },
         ],
-      },
-      fragment: {
-        module: this.getShaderModule(ctx),
-        entryPoint: "fragmentRenderUV",
-        targets: [
+      }),
+
+    [renderPipeline, textureSourceAsGPUTexture, sampler],
+  )
+
+  useGPUAction(
+    ctx,
+    (ctx) => {
+      if (!textureSource) return
+      if (!vertexSource) return
+      if (!renderPipeline) return
+      if (!bindGroup) return
+      if (!renderTarget) return
+
+      const passEncoder = ctx.commandEncoder.beginRenderPass({
+        colorAttachments: [
           {
-            // TODO: Remove this hard-coded value - get the real one somehow.
-            format: "rgba8unorm" as GPUTextureFormat,
+            view: renderTarget.createView(),
+            clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+            loadOp: "clear" as GPULoadOp,
+            storeOp: "store" as GPUStoreOp,
           },
         ],
-      },
-      primitive: {
-        topology: "triangle-list",
-      },
-      layout: autoLayout(),
-    }))
-  }
+      })
+      passEncoder.setPipeline(renderPipeline)
+      passEncoder.setVertexBuffer(0, vertexSource.vertexSourceAsGPUBuffer)
+      passEncoder.setBindGroup(0, bindGroup)
+      passEncoder.draw(vertexSource.vertexSourceCount, 1, 0, 0)
+      passEncoder.end()
+    },
+    [textureSource, vertexSource, renderPipeline, bindGroup, renderTarget],
+  )
 
-  getBindGroup(ctx: Context) {
-    if (this._bindGroup) return this._bindGroup
-
-    const sampler = ctx.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear",
-    })
-
-    return (this._bindGroup = ctx.device.createBindGroup({
-      layout: this.getRenderPipeline(ctx).getBindGroupLayout(0),
-      entries: [
-        {
-          binding: 0,
-          resource: sampler,
-        },
-        {
-          binding: 1,
-          resource: this.getTextureSource()
-            .textureSourceAsGPUTexture(ctx)
-            .createView(),
-        },
-      ],
-    }))
-  }
-
-  renderFrame(ctx: Context, frame: number, target: GPUTexture): void {
-    this.getTextureSource().textureSourceFrame(ctx, frame)
-    const vertexCount = this.getVertexSource().vertexSourceFrame(ctx, frame)
-
-    const passEncoder = ctx.commandEncoder.beginRenderPass({
-      colorAttachments: [
-        {
-          view: target.createView(),
-          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-          loadOp: "clear" as GPULoadOp,
-          storeOp: "store" as GPUStoreOp,
-        },
-      ],
-    })
-    passEncoder.setPipeline(this.getRenderPipeline(ctx))
-    passEncoder.setVertexBuffer(
-      0,
-      this.getVertexSource().vertexSourceAsGPUBuffer(ctx),
-    )
-    passEncoder.setBindGroup(0, this.getBindGroup(ctx))
-    passEncoder.draw(vertexCount, 1, 0, 0)
-    passEncoder.end()
+  return {
+    setTextureSource,
+    setVertexSource,
+    setRenderTarget,
   }
 }

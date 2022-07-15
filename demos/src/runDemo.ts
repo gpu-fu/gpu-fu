@@ -1,24 +1,33 @@
 /// <reference types="@webgpu/types" />
 
-import { Context } from "@gpu-fu/gpu-fu"
+import { UnitFn, createUnitRoot, Render } from "@gpu-fu/gpu-fu"
+import { OutputCanvas } from "@gpu-fu/incubator"
 
-type FrameFn = (ctx: Context, frame: number) => void
-type SetupFn = (
-  device: GPUDevice,
-  canvasContext: GPUCanvasContext,
-) => Promise<FrameFn>
+type FrameFn = (commandEncoder: GPUCommandEncoder) => void
+type SetupFn = (device: GPUDevice, canvasContext: GPUCanvasContext) => FrameFn
 
-export default function runDemo(setupFn: SetupFn) {
+export default function runDemo(renderFn: UnitFn<Render>) {
+  runDemoInner((device, canvasContext) => {
+    const render = createUnitRoot(device, renderFn)
+
+    const output = new OutputCanvas(canvasContext)
+    output.addRender(render)
+
+    return function frame(commandEncoder) {
+      output.outputFrame(commandEncoder)
+    }
+  })
+}
+
+function runDemoInner(setupFn: SetupFn) {
   ;(async () => {
     const device = await getDevice()
     const canvasContext = await getCanvasContext("canvas.main", device)
 
-    const frameFn = await setupFn(device, canvasContext)
+    const frameFn = setupFn(device, canvasContext)
 
-    var frame = 0
     function repeatFrameWithContext() {
-      frame = frame + 1
-      runFrameWithContext(device, frame, frameFn)
+      runFrameWithContext(device, frameFn)
       requestAnimationFrame(repeatFrameWithContext)
     }
     requestAnimationFrame(repeatFrameWithContext)
@@ -71,12 +80,8 @@ function getPreferredCanvasFormat() {
   return "rgba8unorm"
 }
 
-function runFrameWithContext(
-  device: GPUDevice,
-  frame: number,
-  frameFn: FrameFn,
-) {
+function runFrameWithContext(device: GPUDevice, frameFn: FrameFn) {
   const commandEncoder = device.createCommandEncoder()
-  frameFn({ device, commandEncoder }, frame)
+  frameFn(commandEncoder)
   device.queue.submit([commandEncoder.finish()])
 }

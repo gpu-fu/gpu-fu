@@ -1,49 +1,47 @@
 /// <reference types="@webgpu/types" />
 
-import { Context, TextureSource } from "@gpu-fu/gpu-fu"
+import { Context, useProp, useGPUResource, useGPUAction } from "@gpu-fu/gpu-fu"
 
-export default class TextureSourceBitmap implements TextureSource {
-  private _imageBitmap: ImageBitmap
-  private _label: string
+export default function TextureSourceBitmap(ctx: Context) {
+  const [imageBitmap, setImageBitmap] = useProp<ImageBitmap>(ctx)
+  const [label, setLabel] = useProp<string>(ctx)
 
-  private _texture?: GPUTexture
+  const textureWidth = imageBitmap?.width ?? 16 // TODO: remove fallback values
+  const textureHeight = imageBitmap?.height ?? 16 // TODO: remove fallback values
 
-  constructor(imageBitmap: ImageBitmap, label: string) {
-    this._imageBitmap = imageBitmap
-    this._label = label
+  const texture = useGPUResource(
+    ctx,
+    (ctx) =>
+      ctx.device.createTexture({
+        label,
+        size: [textureWidth, textureHeight, 1],
+        format: "rgba8unorm",
+        usage:
+          GPUTextureUsage.TEXTURE_BINDING |
+          GPUTextureUsage.COPY_DST |
+          GPUTextureUsage.RENDER_ATTACHMENT,
+      }),
+    [textureWidth, textureHeight, label],
+  )
+
+  useGPUAction(
+    ctx,
+    (ctx) => {
+      if (!imageBitmap) return
+      if (!texture) return
+
+      ctx.device.queue.copyExternalImageToTexture(
+        { source: imageBitmap },
+        { texture: texture },
+        [imageBitmap.width, imageBitmap.height],
+      )
+    },
+    [imageBitmap, texture],
+  )
+
+  return {
+    setImageBitmap,
+    setLabel,
+    textureSourceAsGPUTexture: texture,
   }
-
-  static async fromURL(url: string, label?: string) {
-    const img = document.createElement("img")
-    img.src = url
-    await img.decode()
-    const imageBitmap = await createImageBitmap(img)
-    return new TextureSourceBitmap(imageBitmap, label ?? url)
-  }
-
-  textureSourceAsGPUTexture(ctx: Context): GPUTexture {
-    if (this._texture) return this._texture
-
-    this._texture = ctx.device.createTexture({
-      label: this._label,
-      size: [this._imageBitmap.width, this._imageBitmap.height, 1],
-      format: "rgba8unorm",
-      usage:
-        GPUTextureUsage.TEXTURE_BINDING |
-        GPUTextureUsage.COPY_DST |
-        GPUTextureUsage.RENDER_ATTACHMENT,
-    })
-
-    ctx.device.queue.copyExternalImageToTexture(
-      { source: this._imageBitmap },
-      { texture: this._texture },
-      [this._imageBitmap.width, this._imageBitmap.height],
-    )
-
-    console.log(this._texture)
-
-    return this._texture
-  }
-
-  textureSourceFrame(ctx: Context, frame: number): void {}
 }

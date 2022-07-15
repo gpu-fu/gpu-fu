@@ -1,19 +1,18 @@
 /// <reference types="@webgpu/types" />
 
+import { useUnit } from "@gpu-fu/gpu-fu"
 import {
-  TextureSourceBitmap,
+  TextureSourceBitmapFromURL,
   TextureFilterConvolve,
   RenderTextureRect,
-  OutputCanvas,
 } from "@gpu-fu/incubator"
 
 import runDemo from "./runDemo"
-runDemo(async (device, canvasContext) => {
-  const textureSource = await TextureSourceBitmap.fromURL(
-    "./assets/fireweed.jpg",
-  )
+runDemo((ctx) => {
+  const textureSource = useUnit(ctx, TextureSourceBitmapFromURL)
+  textureSource.setURL("./assets/fireweed.jpg")
 
-  const sobelHorizontal = new TextureFilterConvolve()
+  const sobelHorizontal = useUnit(ctx, TextureFilterConvolve)
   sobelHorizontal.setTextureSource(textureSource)
   sobelHorizontal.setKernel3x3(
     // Sobel Horizontal Kernel (with scaling and bias to center on gray)
@@ -23,15 +22,8 @@ runDemo(async (device, canvasContext) => {
     { scale: 0.5, bias: 0.5 },
   )
 
-  const renderUV = new RenderTextureRect()
-  renderUV.setTextureSource(sobelHorizontal)
+  const { setRenderTarget, ...render } = useUnit(ctx, RenderTextureRect)
+  render.setTextureSource(sobelHorizontal)
 
-  const output = new OutputCanvas(canvasContext)
-  output.addRender(renderUV)
-
-  console.log(canvasContext.getCurrentTexture())
-
-  return function frame(ctx, frame) {
-    output.outputFrame(ctx, frame)
-  }
+  return { setRenderTarget }
 })

@@ -1,10 +1,13 @@
 /// <reference types="@webgpu/types" />
 
 import {
-  Context,
-  TextureFilter,
   TextureSource,
   autoLayout,
+  Context,
+  useGPUResource,
+  useGPUAction,
+  useProp,
+  useUnitProp,
 } from "@gpu-fu/gpu-fu"
 
 import shaderModuleCode3x3 from "./TextureFilterConvolve3x3.wgsl"
@@ -15,23 +18,13 @@ interface SetKernelOptions {
   normalize?: boolean
 }
 
-export default class TextureFilterConvolve implements TextureFilter {
-  private _textureSource?: TextureSource
-  private _kernelData?: Float32Array
+export default function TextureFilterConvolve(ctx: Context) {
+  const [textureSource, setTextureSource] = useUnitProp<TextureSource>(ctx)
+  const [kernelData, setKernelData] = useProp<Float32Array>(ctx)
 
-  private _kernelBuffer?: GPUBuffer
-  private _kernelBufferUpToDate = false
-  private _texture?: GPUTexture
-  private _shaderModule?: GPUShaderModule
-  private _computePipeline?: GPUComputePipeline
-  private _bindGroup?: GPUBindGroup
+  const textureSourceAsGPUTexture = textureSource?.textureSourceAsGPUTexture
 
-  private getKernelData(): Float32Array {
-    if (this._kernelData) return this._kernelData
-    throw new Error(`${this} has no _kernelData`)
-  }
-
-  setKernel3x3(
+  function setKernel3x3(
     row0: [number, number, number],
     row1: [number, number, number],
     row2: [number, number, number],
@@ -54,157 +47,148 @@ export default class TextureFilterConvolve implements TextureFilter {
       }
     }
 
-    // Create the kernel data array and fill it with data.
-    const kernelData = new Float32Array(10)
-    kernelData[0] = opts.bias ?? 0
-    kernelData.set(row0, 1)
-    kernelData.set(row1, 4)
-    kernelData.set(row2, 7)
-
-    // If the kernel size has changed, it invalidates almost everything.
-    if (kernelData.byteLength !== this._kernelData?.byteLength) {
-      this._kernelBuffer = undefined
-      this._shaderModule = undefined
-      this._computePipeline = undefined
-      this._bindGroup = undefined
-    }
-
-    // Assign the kernel data array and mark the buffer data as invalidated.
-    this._kernelData = kernelData
-    this._kernelBufferUpToDate = false
+    const newKernelData = new Float32Array(10)
+    newKernelData[0] = opts.bias ?? 0
+    newKernelData.set(row0, 1)
+    newKernelData.set(row1, 4)
+    newKernelData.set(row2, 7)
+    setKernelData(newKernelData)
   }
 
-  getTextureSource(): TextureSource {
-    if (this._textureSource) return this._textureSource
-    throw new Error(`${this} has no _textureSource`)
-  }
+  const kernelBuffer = useGPUResource(
+    ctx,
+    (ctx) =>
+      kernelData?.byteLength &&
+      ctx.device.createBuffer({
+        size: kernelData?.byteLength,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      }),
+    [kernelData?.byteLength],
+  )
 
-  setTextureSource(textureSource: TextureSource) {
-    this._textureSource = textureSource
-    this._bindGroup = undefined
-  }
+  useGPUAction(
+    ctx,
+    (ctx) => {
+      if (!kernelBuffer) return
+      if (!kernelData) return
 
-  private getKernelBuffer(ctx: Context): GPUBuffer {
-    if (this._kernelBuffer) return this._kernelBuffer
+      ctx.device.queue.writeBuffer(
+        kernelBuffer,
+        0,
+        kernelData,
+        0,
+        kernelData.length,
+      )
+    },
+    [kernelBuffer, kernelData],
+  )
 
-    console.log("byteLength", this.getKernelData().byteLength)
+  const computePipeline = useGPUResource(
+    ctx,
+    (ctx) => {
+      let shaderModuleCode: string
+      switch (kernelData?.length) {
+        case 10:
+          shaderModuleCode = shaderModuleCode3x3
+          break
+        default:
+          return
+      }
 
-    const buffer = ctx.device.createBuffer({
-      size: this.getKernelData().byteLength,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    })
-
-    return (this._kernelBuffer = buffer)
-  }
-
-  private updateKernelBuffer(ctx: Context) {
-    if (this._kernelBufferUpToDate) return
-
-    const data = this.getKernelData()
-
-    ctx.device.queue.writeBuffer(
-      this.getKernelBuffer(ctx),
-      0,
-      data,
-      0,
-      data.length,
-    )
-
-    this._kernelBufferUpToDate = true
-  }
-
-  private getShaderModule(ctx: Context): GPUShaderModule {
-    if (this._shaderModule) return this._shaderModule
-
-    let shaderModuleCode: string
-    switch (this.getKernelData().length) {
-      case 10:
-        shaderModuleCode = shaderModuleCode3x3
-        break
-      default:
-        throw new Error("_kernelData length is invalid!")
-    }
-
-    return (this._shaderModule = ctx.device.createShaderModule({
-      code: shaderModuleCode,
-    }))
-  }
-
-  private getComputePipeline(ctx: Context): GPUComputePipeline {
-    if (this._computePipeline) return this._computePipeline
-
-    return (this._computePipeline = ctx.device.createComputePipeline({
-      compute: {
-        module: this.getShaderModule(ctx),
-        entryPoint: "computeTextureFilterConvolve3x3",
-      },
-      layout: autoLayout(),
-    }))
-  }
-
-  private getBindGroup(ctx: Context) {
-    if (this._bindGroup) return this._bindGroup
-
-    const sampler = ctx.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear",
-    })
-
-    return (this._bindGroup = ctx.device.createBindGroup({
-      layout: this.getComputePipeline(ctx).getBindGroupLayout(0),
-      entries: [
-        {
-          binding: 0,
-          resource: { buffer: this.getKernelBuffer(ctx) },
+      return ctx.device.createComputePipeline({
+        compute: {
+          module: ctx.device.createShaderModule({
+            code: shaderModuleCode,
+          }),
+          entryPoint: "computeTextureFilterConvolve3x3",
         },
-        {
-          binding: 1,
-          resource: this.getTextureSource()
-            .textureSourceAsGPUTexture(ctx)
-            .createView(),
+        layout: autoLayout(),
+      })
+    },
+    [kernelData?.length],
+  )
+
+  const sampler = useGPUResource(
+    ctx,
+    (ctx) =>
+      ctx.device.createSampler({
+        magFilter: "linear",
+        minFilter: "linear",
+      }),
+    [],
+  )
+
+  const texture = useGPUResource(
+    ctx,
+    (ctx) =>
+      ctx.device.createTexture({
+        format: "rgba8unorm",
+        size: {
+          width: textureSourceAsGPUTexture?.width || 850, // TODO: remove fallback value
+          height: textureSourceAsGPUTexture?.height || 1275, // TODO: remove fallback value
         },
-        {
-          binding: 2,
-          resource: this.textureSourceAsGPUTexture(ctx).createView(),
-        },
-      ],
-    }))
-  }
+        usage:
+          GPUTextureUsage.COPY_DST |
+          GPUTextureUsage.STORAGE_BINDING |
+          GPUTextureUsage.TEXTURE_BINDING,
+      }),
+    [textureSourceAsGPUTexture],
+  )
 
-  textureSourceAsGPUTexture(ctx: Context): GPUTexture {
-    if (this._texture) return this._texture
+  const bindGroup = useGPUResource(
+    ctx,
+    (ctx) =>
+      computePipeline &&
+      kernelBuffer &&
+      textureSourceAsGPUTexture &&
+      texture &&
+      ctx.device.createBindGroup({
+        layout: computePipeline.getBindGroupLayout(0),
+        entries: [
+          {
+            binding: 0,
+            resource: { buffer: kernelBuffer },
+          },
+          {
+            binding: 1,
+            resource: textureSourceAsGPUTexture.createView(),
+          },
+          {
+            binding: 2,
+            resource: texture.createView(),
+          },
+        ],
+      }),
+    [computePipeline, kernelBuffer, textureSourceAsGPUTexture, texture],
+  )
 
-    const textureSource = this.getTextureSource().textureSourceAsGPUTexture(ctx)
+  useGPUAction(
+    ctx,
+    (ctx) => {
+      if (!textureSourceAsGPUTexture) return
+      if (!computePipeline) return
+      if (!bindGroup) return
 
-    this._texture = ctx.device.createTexture({
-      format: "rgba8unorm",
-      size: {
-        width: textureSource.width || 850, // TODO: remove fallback value
-        height: textureSource.height || 1275, // TODO: remove fallback value
-      },
-      usage:
-        GPUTextureUsage.COPY_DST |
-        GPUTextureUsage.STORAGE_BINDING |
-        GPUTextureUsage.TEXTURE_BINDING,
-    })
+      const workGroupSizeX = 32 // (must match the WGSL code)
+      const workGroupSizeY = 1 // (must match the WGSL code)
 
-    return this._texture
-  }
+      const passEncoder = ctx.commandEncoder.beginComputePass()
+      passEncoder.setPipeline(computePipeline)
+      passEncoder.setBindGroup(0, bindGroup)
+      passEncoder.dispatch(
+        (textureSourceAsGPUTexture.width || 850) / // TODO: remove fallback value
+          workGroupSizeX,
+        (textureSourceAsGPUTexture.height || 1275) / // TODO: remove fallback value
+          workGroupSizeY,
+      )
+      passEncoder.end()
+    },
+    [textureSourceAsGPUTexture, computePipeline, bindGroup],
+  )
 
-  textureSourceFrame(ctx: Context, frame: number) {
-    this.updateKernelBuffer(ctx)
-
-    const textureSource = this.getTextureSource().textureSourceAsGPUTexture(ctx)
-    const workGroupSizeX = 32 // (must match the WGSL code)
-    const workGroupSizeY = 1 // (must match the WGSL code)
-
-    const passEncoder = ctx.commandEncoder.beginComputePass()
-    passEncoder.setPipeline(this.getComputePipeline(ctx))
-    passEncoder.setBindGroup(0, this.getBindGroup(ctx))
-    passEncoder.dispatch(
-      (textureSource.width || 850) / workGroupSizeX, // TODO: remove fallback value
-      (textureSource.height || 1275) / workGroupSizeY, // TODO: remove fallback value
-    )
-    passEncoder.end()
+  return {
+    setTextureSource,
+    setKernel3x3,
+    textureSourceAsGPUTexture: texture,
   }
 }

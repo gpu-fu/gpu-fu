@@ -1,26 +1,18 @@
 /// <reference types="@webgpu/types" />
 
+import { useUnit } from "@gpu-fu/gpu-fu"
 import {
-  OutputCanvas,
   RenderTextureRect,
-  TextureSourceBitmap,
+  TextureSourceBitmapFromURL,
 } from "@gpu-fu/incubator"
 
 import runDemo from "./runDemo"
-runDemo(async (device, canvasContext) => {
-  const textureSource = await TextureSourceBitmap.fromURL(
-    "./assets/fireweed.jpg",
-  )
+runDemo((ctx) => {
+  const textureSource = useUnit(ctx, TextureSourceBitmapFromURL)
+  textureSource.setURL("./assets/fireweed.jpg")
 
-  const renderUV = new RenderTextureRect()
-  renderUV.setTextureSource(textureSource)
+  const { setRenderTarget, ...render } = useUnit(ctx, RenderTextureRect)
+  render.setTextureSource(textureSource)
 
-  const output = new OutputCanvas(canvasContext)
-  output.addRender(renderUV)
-
-  console.log(canvasContext.getCurrentTexture())
-
-  return function frame(ctx, frame) {
-    output.outputFrame(ctx, frame)
-  }
+  return { setRenderTarget }
 })
