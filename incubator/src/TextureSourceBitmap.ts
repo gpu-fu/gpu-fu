@@ -3,17 +3,17 @@
 import { Context, useProp, useGPUResource, useGPUAction } from "@gpu-fu/gpu-fu"
 
 export default function TextureSourceBitmap(ctx: Context) {
-  const [imageBitmap, setImageBitmap] = useProp<ImageBitmap>(ctx)
-  const [label, setLabel] = useProp<string>(ctx)
+  const imageBitmap = useProp<ImageBitmap>(ctx)
+  const label = useProp<string>(ctx)
 
-  const textureWidth = imageBitmap?.width ?? 16 // TODO: remove fallback values
-  const textureHeight = imageBitmap?.height ?? 16 // TODO: remove fallback values
+  const textureWidth = imageBitmap()?.width ?? 16 // TODO: remove fallback values
+  const textureHeight = imageBitmap()?.height ?? 16 // TODO: remove fallback values
 
   const texture = useGPUResource(
     ctx,
     (ctx) =>
       ctx.device.createTexture({
-        label,
+        label: label(),
         size: [textureWidth, textureHeight, 1],
         format: "rgba8unorm",
         usage:
@@ -21,27 +21,28 @@ export default function TextureSourceBitmap(ctx: Context) {
           GPUTextureUsage.COPY_DST |
           GPUTextureUsage.RENDER_ATTACHMENT,
       }),
-    [textureWidth, textureHeight, label],
+    [textureWidth, textureHeight, label()],
   )
 
   useGPUAction(
     ctx,
     (ctx) => {
-      if (!imageBitmap) return
+      const currentImageBitmap = imageBitmap()
+      if (!currentImageBitmap) return
       if (!texture) return
 
       ctx.device.queue.copyExternalImageToTexture(
-        { source: imageBitmap },
+        { source: currentImageBitmap },
         { texture: texture },
-        [imageBitmap.width, imageBitmap.height],
+        [currentImageBitmap.width, currentImageBitmap.height],
       )
     },
-    [imageBitmap, texture],
+    [imageBitmap(), texture],
   )
 
   return {
-    setImageBitmap,
-    setLabel,
+    imageBitmap,
+    label,
     textureSourceAsGPUTexture: texture,
   }
 }

@@ -19,10 +19,11 @@ interface SetKernelOptions {
 }
 
 export default function TextureFilterConvolve(ctx: Context) {
-  const [textureSource, setTextureSource] = useUnitProp<TextureSource>(ctx)
-  const [kernelData, setKernelData] = useProp<Float32Array>(ctx)
+  const textureSource = useUnitProp<TextureSource>(ctx)
+  const kernelData = useProp<Float32Array>(ctx)
 
-  const textureSourceAsGPUTexture = textureSource?.textureSourceAsGPUTexture
+  const textureSourceAsGPUTexture = textureSource()?.textureSourceAsGPUTexture
+  const kernelDataByteLength = kernelData()?.byteLength
 
   function setKernel3x3(
     row0: [number, number, number],
@@ -52,42 +53,43 @@ export default function TextureFilterConvolve(ctx: Context) {
     newKernelData.set(row0, 1)
     newKernelData.set(row1, 4)
     newKernelData.set(row2, 7)
-    setKernelData(newKernelData)
+    kernelData.set(newKernelData)
   }
 
   const kernelBuffer = useGPUResource(
     ctx,
     (ctx) =>
-      kernelData?.byteLength &&
+      kernelDataByteLength &&
       ctx.device.createBuffer({
-        size: kernelData?.byteLength,
+        size: kernelDataByteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       }),
-    [kernelData?.byteLength],
+    [kernelDataByteLength],
   )
 
   useGPUAction(
     ctx,
     (ctx) => {
+      const currentKernelData = kernelData()
       if (!kernelBuffer) return
-      if (!kernelData) return
+      if (!currentKernelData) return
 
       ctx.device.queue.writeBuffer(
         kernelBuffer,
         0,
-        kernelData,
+        currentKernelData,
         0,
-        kernelData.length,
+        currentKernelData.length,
       )
     },
-    [kernelBuffer, kernelData],
+    [kernelBuffer, kernelData()],
   )
 
   const computePipeline = useGPUResource(
     ctx,
     (ctx) => {
       let shaderModuleCode: string
-      switch (kernelData?.length) {
+      switch (kernelData()?.length) {
         case 10:
           shaderModuleCode = shaderModuleCode3x3
           break
@@ -105,17 +107,7 @@ export default function TextureFilterConvolve(ctx: Context) {
         layout: autoLayout(),
       })
     },
-    [kernelData?.length],
-  )
-
-  const sampler = useGPUResource(
-    ctx,
-    (ctx) =>
-      ctx.device.createSampler({
-        magFilter: "linear",
-        minFilter: "linear",
-      }),
-    [],
+    [kernelData()?.length],
   )
 
   const texture = useGPUResource(
@@ -187,7 +179,7 @@ export default function TextureFilterConvolve(ctx: Context) {
   )
 
   return {
-    setTextureSource,
+    textureSource,
     setKernel3x3,
     textureSourceAsGPUTexture: texture,
   }

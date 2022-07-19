@@ -2,36 +2,31 @@ import {
   Context,
   ContextForGPUResource,
   ContextForGPUAction,
-  SetPropFn,
   MaybeDestroyableGPUResource,
   ContextEmpty,
 } from "./Context"
 import { Unit, UnitFn, NotAUnit, unit } from "./Unit"
+import { Property } from "./Property"
 
-export function useProp<T>(
-  ctx: Context,
-): [NotAUnit<T> | undefined, SetPropFn<NotAUnit<T> | undefined>] {
-  return ctx._useProp<T | undefined>(undefined) as [
-    NotAUnit<T> | undefined,
-    SetPropFn<NotAUnit<T> | undefined>,
-  ]
+export function useProp<T>(ctx: Context): Property<NotAUnit<T | undefined>> {
+  return ctx._useProp<T | undefined>(undefined) as Property<
+    NotAUnit<T | undefined>
+  >
 }
 
 export function useInitializedProp<T>(
   ctx: Context,
   initialValue: (() => NotAUnit<T>) | NotAUnit<T>,
-): [NotAUnit<T>, SetPropFn<NotAUnit<T>>] {
+): Property<NotAUnit<T>> {
   return ctx._useProp<NotAUnit<T>>(initialValue)
 }
 
-export function useUnitProp<U>(
-  ctx: Context,
-): [Unit<U> | undefined, SetPropFn<Unit<U> | undefined>] {
+export function useUnitProp<U>(ctx: Context): Property<Unit<U> | undefined> {
   return ctx._useUnitProp<Unit<U> | undefined>(undefined)
 }
 
 export function useUnit<U>(ctx: Context, unitFn: UnitFn<U>): Unit<U> {
-  return ctx._useUnitProp<Unit<U>>(() => unit(ctx.device, unitFn))[0]
+  return ctx._useUnitProp<Unit<U>>(() => unit(ctx.device, unitFn))()
 }
 
 export function useGPUResource<T extends MaybeDestroyableGPUResource>(
@@ -60,7 +55,7 @@ export function useEffect<T>(
 
 export function useAsyncPropSetter<T>(
   ctx: Context,
-  setPropFn: SetPropFn<T>,
+  setPropFn: (newValue: T) => unknown,
   effect: (ctx: ContextEmpty) => Promise<T>,
   deps: Array<unknown>,
 ) {

@@ -15,13 +15,13 @@ import {
 import shaderModuleCode from "./RenderUV.wgsl"
 
 export default function RenderUV(ctx: Context) {
-  const [cameraSource, setCameraMatrixSource] = useUnitProp<MatrixSource>(ctx)
-  const [vertexSource, setVertexSource] = useUnitProp<VertexSource>(ctx)
-  const [textureSource, setTextureSource] = useUnitProp<TextureSource>(ctx)
-  const [renderTarget, setRenderTarget] = useProp<GPUTexture>(ctx)
+  const cameraSource = useUnitProp<MatrixSource>(ctx)
+  const vertexSource = useUnitProp<VertexSource>(ctx)
+  const textureSource = useUnitProp<TextureSource>(ctx)
+  const renderTarget = useProp<GPUTexture>(ctx)
 
-  const cameraSourceAsGPUBuffer = cameraSource?.cameraSourceAsGPUBuffer
-  const textureSourceAsGPUTexture = textureSource?.textureSourceAsGPUTexture
+  const cameraSourceAsGPUBuffer = cameraSource()?.cameraSourceAsGPUBuffer
+  const textureSourceAsGPUTexture = textureSource()?.textureSourceAsGPUTexture
 
   const shaderModule = useGPUResource(
     ctx,
@@ -34,9 +34,11 @@ export default function RenderUV(ctx: Context) {
 
   const renderPipeline = useGPUResource(
     ctx,
-    (ctx) =>
-      vertexSource &&
-      ctx.device.createRenderPipeline({
+    (ctx) => {
+      const currentVertexSource = vertexSource()
+      if (!currentVertexSource) return
+
+      return ctx.device.createRenderPipeline({
         vertex: {
           module: shaderModule,
           entryPoint: cameraSourceAsGPUBuffer
@@ -44,16 +46,16 @@ export default function RenderUV(ctx: Context) {
             : "vertexRenderUV",
           buffers: [
             {
-              arrayStride: vertexSource.vertexSourceStrideBytes,
+              arrayStride: currentVertexSource.vertexSourceStrideBytes,
               attributes: [
                 {
                   shaderLocation: 0,
-                  offset: vertexSource.vertexSourceXYZWOffsetBytes,
+                  offset: currentVertexSource.vertexSourceXYZWOffsetBytes,
                   format: "float32x4" as GPUVertexFormat,
                 },
                 {
                   shaderLocation: 1,
-                  offset: vertexSource.vertexSourceUVOffsetBytes,
+                  offset: currentVertexSource.vertexSourceUVOffsetBytes,
                   format: "float32x2" as GPUVertexFormat,
                 },
               ],
@@ -80,8 +82,9 @@ export default function RenderUV(ctx: Context) {
           format: "depth24plus",
         },
         layout: autoLayout(),
-      }),
-    [shaderModule, vertexSource],
+      })
+    },
+    [shaderModule, vertexSource()],
   )
 
   const sampler = useGPUResource(
@@ -144,16 +147,17 @@ export default function RenderUV(ctx: Context) {
   useGPUAction(
     ctx,
     (ctx) => {
-      if (!textureSource) return
-      if (!vertexSource) return
+      const currentVertexSource = vertexSource()
+      const currentRenderTarget = renderTarget()
+      if (!currentVertexSource) return
+      if (!currentRenderTarget) return
       if (!renderPipeline) return
       if (!bindGroup) return
-      if (!renderTarget) return
 
       const passEncoder = ctx.commandEncoder.beginRenderPass({
         colorAttachments: [
           {
-            view: renderTarget.createView(),
+            view: currentRenderTarget.createView(),
             clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
             loadOp: "clear" as GPULoadOp,
             storeOp: "store" as GPUStoreOp,
@@ -167,18 +171,21 @@ export default function RenderUV(ctx: Context) {
         },
       })
       passEncoder.setPipeline(renderPipeline)
-      passEncoder.setVertexBuffer(0, vertexSource.vertexSourceAsGPUBuffer)
+      passEncoder.setVertexBuffer(
+        0,
+        currentVertexSource.vertexSourceAsGPUBuffer,
+      )
       passEncoder.setBindGroup(0, bindGroup)
-      passEncoder.draw(vertexSource.vertexSourceCount, 1, 0, 0)
+      passEncoder.draw(currentVertexSource.vertexSourceCount, 1, 0, 0)
       passEncoder.end()
     },
-    [textureSource, vertexSource, renderPipeline, bindGroup, renderTarget],
+    [vertexSource(), renderTarget(), renderPipeline, bindGroup],
   )
 
   return {
-    setCameraMatrixSource,
-    setTextureSource,
-    setVertexSource,
-    setRenderTarget,
+    cameraSource,
+    textureSource,
+    vertexSource,
+    renderTarget,
   }
 }

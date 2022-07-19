@@ -9,7 +9,7 @@ const vertexSourceXYZWOffsetBytes = 0
 const vertexSourceUVOffsetBytes = 4 * 4
 
 export default function VertexSourceRect(ctx: Context) {
-  const [aspectFillRatio, setAspectFillRatio] = useProp<number>(ctx)
+  const aspectFillRatio = useProp<number>(ctx)
 
   const buffer = useGPUResource(
     ctx,
@@ -24,6 +24,7 @@ export default function VertexSourceRect(ctx: Context) {
   useGPUAction(
     ctx,
     (ctx) => {
+      const currentAspectFillRatio = aspectFillRatio()
       if (!buffer) return
 
       var uMin = 0
@@ -31,12 +32,12 @@ export default function VertexSourceRect(ctx: Context) {
       var vMin = 0
       var vMax = 1
 
-      if (aspectFillRatio) {
-        if (aspectFillRatio < 1) {
-          vMin = 0.5 - 0.5 * aspectFillRatio
+      if (currentAspectFillRatio) {
+        if (currentAspectFillRatio < 1) {
+          vMin = 0.5 - 0.5 * currentAspectFillRatio
           vMax = 1 - vMin
         } else {
-          uMin = 0.5 - 0.5 / aspectFillRatio
+          uMin = 0.5 - 0.5 / currentAspectFillRatio
           uMax = 1 - uMin
         }
       }
@@ -54,11 +55,11 @@ export default function VertexSourceRect(ctx: Context) {
 
       ctx.device.queue.writeBuffer(buffer, 0, data, 0, data.length)
     },
-    [buffer, aspectFillRatio],
+    [buffer, aspectFillRatio()],
   )
 
   return {
-    setAspectFillRatio,
+    aspectFillRatio,
     vertexSourceCount,
     vertexSourceTotalBytes,
     vertexSourceStrideBytes,

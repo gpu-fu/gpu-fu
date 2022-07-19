@@ -1,10 +1,7 @@
 /// <reference types="@webgpu/types" />
 
 import { Unit } from "./Unit"
-
-export type UpdatePropFn<T> = (currentValue: T) => T
-export type SetPropFn<T> = (newValue: T | UpdatePropFn<T>) => void
-export type PropStoreItem<T> = [T, SetPropFn<T>]
+import { Property } from "./Property"
 
 export type MaybeDestroyableGPUResource =
   | undefined
@@ -41,7 +38,7 @@ export class ContextImplementation<U> {
 
   private _store: unknown[] = []
   private _storeIndex = 0
-  private _storeUnits: PropStoreItem<Unit<unknown> | undefined>[] = []
+  private _storeUnits: Property<Unit<unknown> | undefined>[] = []
   private _storeUnitsIndex = 0
   private _storeGPUActions: StoreItemGPUAction[] = []
   private _storeGPUActionsIndex = 0
@@ -70,7 +67,8 @@ export class ContextImplementation<U> {
 
   runUnitIfNeeded(currentUnit: U) {
     var otherUnitsRan = false
-    this._storeUnits.forEach(([unit, setUnit]) => {
+    this._storeUnits.forEach((unitProp) => {
+      const unit = unitProp()
       const otherUnitRan = unit?._ctx.runUnitIfNeeded(unit)
       if (otherUnitRan) otherUnitsRan = true
     })
@@ -88,7 +86,8 @@ export class ContextImplementation<U> {
   }
 
   runGPUActionsIfNeeded(commandEncoder: GPUCommandEncoder) {
-    this._storeUnits.forEach(([unit, setUnit]) => {
+    this._storeUnits.forEach((unitProp) => {
+      const unit = unitProp()
       unit?._ctx.runGPUActionsIfNeeded(commandEncoder)
     })
 
@@ -105,43 +104,51 @@ export class ContextImplementation<U> {
   ///
   // This next section has public methods
 
-  _useProp<T>(initialValue: (() => T) | T): [T, SetPropFn<T>] {
+  _useProp<T>(initialValue: (() => T) | T): Property<T> {
     const storeIndex = this._nextStoreIndex()
-    const existing = this._store[storeIndex] as PropStoreItem<T>
+    const existing = this._store[storeIndex] as Property<T>
 
-    // If there is an existing prop/setProp pair, return it now.
+    // If there is an existing property pair, return it now.
     if (existing) return existing
 
     // Otherwise create, store, and return a new prop/setProp pair,
     // using the provided initial state value or function.
     const ctx = this
-    const store: [T, SetPropFn<T>] = [] as unknown as PropStoreItem<T>
-    store[0] =
+
+    var value: T =
       typeof initialValue === "function"
         ? (initialValue as () => T)()
         : initialValue
-    store[1] = (newValueArg) => {
-      const currentValue = store[0]
-      const newValue =
-        typeof newValueArg === "function"
-          ? (newValueArg as UpdatePropFn<T>)(currentValue)
-          : newValueArg
 
-      if (newValue !== currentValue) {
-        store[0] = newValue
-        // This change necessitates re-running the function with new state.
+    // TODO: Subscription tracking
+    const prop: Property<T> = (() => value) as Property<T>
+    prop.set = (newValue: T) => {
+      if (value !== newValue) {
+        value = newValue
         ctx._needsUnitReRun = true
       }
     }
-    this._store[storeIndex] = store
-    return store
+    prop.change = (fn: (currentValue: T) => T) => {
+      const newValue = fn(value)
+      if (value !== newValue) {
+        value = newValue
+        ctx._needsUnitReRun = true
+      }
+    }
+    prop.mutate = (fn: (currentValue: T) => void) => {
+      fn(value)
+      ctx._needsUnitReRun = true // assume mutation always happens
+    }
+
+    this._store[storeIndex] = prop
+    return prop
   }
 
   _useUnitProp<T extends Unit<unknown> | undefined>(
     initialValue: (() => T) | T,
-  ): [T, SetPropFn<T>] {
+  ): Property<T> {
     const storeIndex = this._nextStoreUnitsIndex()
-    const existing = this._storeUnits[storeIndex] as unknown as PropStoreItem<T>
+    const existing = this._storeUnits[storeIndex] as Property<T>
 
     // If there is an existing prop/setProp pair, return it now.
     if (existing) return existing
@@ -149,28 +156,34 @@ export class ContextImplementation<U> {
     // Otherwise create, store, and return a new prop/setProp pair,
     // using the provided initial state value or function.
     const ctx = this
-    const store: [T, SetPropFn<T>] = [] as unknown as PropStoreItem<T>
-    store[0] =
+
+    var value: T =
       typeof initialValue === "function"
         ? (initialValue as () => T)()
         : initialValue
-    store[1] = (newValueArg) => {
-      const currentValue = store[0]
-      const newValue =
-        typeof newValueArg === "function"
-          ? (newValueArg as UpdatePropFn<T>)(currentValue)
-          : newValueArg
 
-      if (newValue !== currentValue) {
-        store[0] = newValue
-        // This change necessitates re-running the function with new state.
+    // TODO: Subscription tracking
+    const prop: Property<T> = (() => value) as Property<T>
+    prop.set = (newValue: T) => {
+      if (value !== newValue) {
+        value = newValue
         ctx._needsUnitReRun = true
       }
     }
-    this._storeUnits[storeIndex] = store as unknown as PropStoreItem<
-      Unit<unknown> | undefined
-    >
-    return store
+    prop.change = (fn: (currentValue: T) => T) => {
+      const newValue = fn(value)
+      if (value !== newValue) {
+        value = newValue
+        ctx._needsUnitReRun = true
+      }
+    }
+    prop.mutate = (fn: (currentValue: T) => void) => {
+      fn(value)
+      ctx._needsUnitReRun = true // assume mutation always happens
+    }
+
+    this._storeUnits[storeIndex] = prop
+    return prop
   }
 
   _useGPUResource<T extends MaybeDestroyableGPUResource>(

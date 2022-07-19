@@ -1,13 +1,15 @@
 import { Context, useProp, useEffect } from "@gpu-fu/gpu-fu"
+import { vec3 } from "gl-matrix"
 import MatrixSourceOrbitalCamera from "./MatrixSourceOrbitalCamera"
 
 export default function MatrixSourceOrbitalCameraWithControls(ctx: Context) {
   const cameraSource = MatrixSourceOrbitalCamera(ctx)
-  const [canvas, setCanvas] = useProp<HTMLCanvasElement>(ctx)
+  const canvasProp = useProp<HTMLCanvasElement>(ctx)
 
   useEffect(
     ctx,
     (ctx) => {
+      const canvas = canvasProp()
       if (!canvas) return () => {}
 
       const maxLatitudeRadians = Math.PI / 2 - 0.05
@@ -21,8 +23,9 @@ export default function MatrixSourceOrbitalCameraWithControls(ctx: Context) {
         lastClientY = event.clientY
 
         if (event.altKey) {
-          const longitudeRadians = cameraSource.cameraLongitudeRadians
-          const latitudeRadians = cameraSource.cameraLatitudeRadians
+          const longitudeRadians =
+            cameraSource.cameraPosition().longitudeRadians
+          const latitudeRadians = cameraSource.cameraPosition().latitudeRadians
 
           // The 2D X axis is always perpendicular to the 3D Y axis, so changes
           // along the 2D X axis never affect the 3D Y axis.
@@ -37,17 +40,29 @@ export default function MatrixSourceOrbitalCameraWithControls(ctx: Context) {
             scale *
             (deltaX * Math.sin(longitudeRadians) +
               deltaY * Math.sin(latitudeRadians) * Math.cos(longitudeRadians))
-          cameraSource.setTargetX((x) => x + deltaX3D)
-          cameraSource.setTargetY((y) => y + deltaY3D)
-          cameraSource.setTargetZ((z) => z + deltaZ3D)
-        } else {
-          cameraSource.setCameraLongitudeRadians((x) => x - deltaX * 0.01)
-          cameraSource.setCameraLatitudeRadians((y) =>
-            Math.min(
-              maxLatitudeRadians,
-              Math.max(-maxLatitudeRadians, y - deltaY * 0.01),
-            ),
+
+          // TODO: Use `mutate` instead of `change`, to preserve the same vec3.
+          cameraSource.targetPosition.change(
+            (current) =>
+              vec3.fromValues(
+                current[0] + deltaX3D,
+                current[1] + deltaX3D,
+                current[2] + deltaX3D,
+              ) as Float32Array,
           )
+        } else {
+          // TODO: Use `mutate` instead of `change`, to preserve the same object.
+          cameraSource.cameraPosition.change((current) => ({
+            distance: current.distance,
+            longitudeRadians: current.longitudeRadians - deltaX * 0.01,
+            latitudeRadians: Math.min(
+              maxLatitudeRadians,
+              Math.max(
+                -maxLatitudeRadians,
+                current.latitudeRadians - deltaY * 0.01,
+              ),
+            ),
+          }))
         }
       }
 
@@ -80,8 +95,8 @@ export default function MatrixSourceOrbitalCameraWithControls(ctx: Context) {
         canvas.removeEventListener("pointermove", onPointerMove)
       }
     },
-    [canvas],
+    [canvasProp()],
   )
 
-  return Object.assign(cameraSource, { setCanvas })
+  return Object.assign(cameraSource, { setCanvas: canvasProp.set })
 }

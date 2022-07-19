@@ -15,7 +15,7 @@ import shaderModuleCode from "./demo1.wgsl"
 runDemo(RenderColoredTriangle)
 
 function RenderColoredTriangle(ctx: Context) {
-  const [renderTarget, setRenderTarget] = useProp<GPUTexture>(ctx)
+  const renderTarget = useProp<GPUTexture>(ctx)
 
   const renderPipeline = useGPUResource(
     ctx,
@@ -46,11 +46,13 @@ function RenderColoredTriangle(ctx: Context) {
   useGPUAction(
     ctx,
     (ctx) => {
-      if (!renderTarget) return
+      const currentRenderTarget = renderTarget()
+      if (!currentRenderTarget) return
+
       const passEncoder = ctx.commandEncoder.beginRenderPass({
         colorAttachments: [
           {
-            view: renderTarget.createView(),
+            view: currentRenderTarget.createView(),
             clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
             loadOp: "clear" as GPULoadOp,
             storeOp: "store" as GPUStoreOp,
@@ -61,8 +63,8 @@ function RenderColoredTriangle(ctx: Context) {
       passEncoder.draw(3, 1, 0, 0)
       passEncoder.end()
     },
-    [renderTarget],
+    [renderTarget()],
   )
 
-  return { setRenderTarget }
+  return { renderTarget }
 }

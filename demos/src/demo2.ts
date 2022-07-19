@@ -9,10 +9,10 @@ import {
 import runDemo from "./runDemo"
 runDemo((ctx) => {
   const textureSource = useUnit(ctx, TextureSourceBitmapFromURL)
-  textureSource.setURL("./assets/fireweed.jpg")
+  textureSource.url.set("./assets/fireweed.jpg")
 
-  const { setRenderTarget, ...render } = useUnit(ctx, RenderTextureRect)
-  render.setTextureSource(textureSource)
+  const { renderTarget, ...render } = useUnit(ctx, RenderTextureRect)
+  render.textureSource.set(textureSource)
 
-  return { setRenderTarget }
+  return { renderTarget }
 })

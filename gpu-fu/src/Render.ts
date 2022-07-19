@@ -1,5 +1,7 @@
 /// <reference types="@webgpu/types" />
 
+import { Property } from "./Property"
+
 export default interface Render {
-  setRenderTarget: (target: GPUTexture) => void
+  renderTarget: Property<GPUTexture | undefined>
 }

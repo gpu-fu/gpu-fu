@@ -1,6 +1,6 @@
 /// <reference types="@webgpu/types" />
 
-import { useUnit } from "@gpu-fu/gpu-fu"
+import { useEffect, useUnit } from "@gpu-fu/gpu-fu"
 import {
   TextureSourceBitmapFromURL,
   TextureFilterConvolve,
@@ -10,10 +10,10 @@ import {
 import runDemo from "./runDemo"
 runDemo((ctx) => {
   const textureSource = useUnit(ctx, TextureSourceBitmapFromURL)
-  textureSource.setURL("./assets/fireweed.jpg")
+  textureSource.url.set("./assets/fireweed.jpg")
 
   const sobelHorizontal = useUnit(ctx, TextureFilterConvolve)
-  sobelHorizontal.setTextureSource(textureSource)
+  sobelHorizontal.textureSource.set(textureSource)
   sobelHorizontal.setKernel3x3(
     // Sobel Horizontal Kernel (with scaling and bias to center on gray)
     [1, 2, 1],
@@ -22,8 +22,8 @@ runDemo((ctx) => {
     { scale: 0.5, bias: 0.5 },
   )
 
-  const { setRenderTarget, ...render } = useUnit(ctx, RenderTextureRect)
-  render.setTextureSource(sobelHorizontal)
+  const { renderTarget, ...render } = useUnit(ctx, RenderTextureRect)
+  render.textureSource.set(sobelHorizontal)
 
-  return { setRenderTarget }
+  return { renderTarget }
 })

@@ -11,17 +11,15 @@ const matrixColCount = 4
 const matrixTotalBytes = matrixRowCount * matrixColCount * 4
 
 export default function MatrixSourceCamera(ctx: Context) {
-  const [targetX, setTargetX] = useInitializedProp(ctx, 0)
-  const [targetY, setTargetY] = useInitializedProp(ctx, 0)
-  const [targetZ, setTargetZ] = useInitializedProp(ctx, 0)
-
-  const [cameraDistance, setCameraDistance] = useInitializedProp(ctx, 5)
-  const [cameraLatitudeRadians, setCameraLatitudeRadians] = useInitializedProp(
+  const targetPosition = useInitializedProp(
     ctx,
-    0,
+    vec3.fromValues(0, 0, 0) as Float32Array,
   )
-  const [cameraLongitudeRadians, setCameraLongitudeRadians] =
-    useInitializedProp(ctx, 0)
+  const cameraPosition = useInitializedProp(ctx, {
+    distance: 5,
+    latitudeRadians: 0,
+    longitudeRadians: 0,
+  })
 
   const buffer = useGPUResource(
     ctx,
@@ -49,18 +47,17 @@ export default function MatrixSourceCamera(ctx: Context) {
         zFar,
       )
 
-      const targetPos = vec3.fromValues(targetX, targetY, targetZ)
-      // var cameraPos = vec3.fromValues(0, 0, cameraDistance)
-      // vec3.rotateY(came)
+      const currentTarget = targetPosition()
+      const currentCamera = cameraPosition()
 
       const cameraMatrix = mat4.create()
-      mat4.translate(cameraMatrix, cameraMatrix, targetPos)
-      mat4.rotateY(cameraMatrix, cameraMatrix, cameraLongitudeRadians)
-      mat4.rotateX(cameraMatrix, cameraMatrix, cameraLatitudeRadians)
+      mat4.translate(cameraMatrix, cameraMatrix, currentTarget)
+      mat4.rotateY(cameraMatrix, cameraMatrix, currentCamera.longitudeRadians)
+      mat4.rotateX(cameraMatrix, cameraMatrix, currentCamera.latitudeRadians)
       mat4.translate(
         cameraMatrix,
         cameraMatrix,
-        vec3.fromValues(0, 0, cameraDistance),
+        vec3.fromValues(0, 0, currentCamera.distance),
       )
 
       const cameraPos = vec3.create()
@@ -69,7 +66,7 @@ export default function MatrixSourceCamera(ctx: Context) {
       const upward = vec3.fromValues(0, 1, 0)
 
       const viewMatrix = mat4.create() as Float32Array
-      mat4.lookAt(viewMatrix, cameraPos, targetPos, upward)
+      mat4.lookAt(viewMatrix, cameraPos, currentTarget, upward)
 
       const projectionViewMatrix = mat4.create()
       mat4.multiply(projectionViewMatrix, projectionMatrix, viewMatrix)
@@ -78,30 +75,12 @@ export default function MatrixSourceCamera(ctx: Context) {
 
       ctx.device.queue.writeBuffer(buffer, 0, data, 0, data.length)
     },
-    [
-      buffer,
-      targetX,
-      targetY,
-      targetZ,
-      cameraDistance,
-      cameraLatitudeRadians,
-      cameraLongitudeRadians,
-    ],
+    [buffer, targetPosition(), cameraPosition()],
   )
 
   return {
-    targetX,
-    targetY,
-    targetZ,
-    cameraDistance,
-    cameraLatitudeRadians,
-    cameraLongitudeRadians,
-    setTargetX,
-    setTargetY,
-    setTargetZ,
-    setCameraDistance,
-    setCameraLatitudeRadians,
-    setCameraLongitudeRadians,
+    targetPosition,
+    cameraPosition,
     cameraSourceAsGPUBuffer: buffer,
   }
 }
