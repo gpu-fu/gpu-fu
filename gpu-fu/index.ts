@@ -1,4 +1,4 @@
-export { Property } from "./src/Property"
+export { Property, PropertyReadOnly } from "./src/Property"
 export { Context } from "./src/Context"
 export { Unit, UnitFn, UnitRoot, createUnitRoot } from "./src/Unit"
 export {
