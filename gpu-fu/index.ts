@@ -7,6 +7,7 @@ export {
   useUnitProp,
   useGPUResource,
   useGPUAction,
+  useEffect,
   useAsyncPropSetter,
 } from "./src/hooks"
 

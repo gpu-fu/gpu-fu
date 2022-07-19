@@ -1,4 +1,5 @@
 export { default as MatrixSourceOrbitalCamera } from "./src/MatrixSourceOrbitalCamera"
+export { default as MatrixSourceOrbitalCameraWithControls } from "./src/MatrixSourceOrbitalCameraWithControls"
 export { default as OutputCanvas } from "./src/OutputCanvas"
 export { default as RenderTextureRect } from "./src/RenderTextureRect"
 export { default as RenderUV } from "./src/RenderUV"
