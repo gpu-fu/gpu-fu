@@ -50,6 +50,14 @@ export function useGPUAction(
   ctx._useGPUAction(action, deps)
 }
 
+export function useEffect<T>(
+  ctx: Context,
+  effect: (ctx: ContextEmpty) => (() => void) | undefined,
+  deps: Array<unknown>,
+) {
+  return ctx._useEffect(effect, deps)
+}
+
 export function useAsyncPropSetter<T>(
   ctx: Context,
   setPropFn: SetPropFn<T>,

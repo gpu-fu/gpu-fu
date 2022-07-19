@@ -23,7 +23,7 @@ export type StoreItemGPUAction = [
   boolean,
 ]
 
-export type StoreItemEffect = [() => void | undefined, unknown[]]
+export type StoreItemEffect = [(() => void) | undefined, unknown[]]
 
 export class ContextImplementation<U> {
   private _unitFn: (ctx: Context) => U
@@ -232,7 +232,7 @@ export class ContextImplementation<U> {
   }
 
   _useEffect(
-    effect: (ctx: ContextEmpty) => () => void | undefined,
+    effect: (ctx: ContextEmpty) => (() => void) | undefined,
     deps: Array<unknown>,
   ) {
     const storeIndex = this._nextStoreIndex()

@@ -1,23 +1,26 @@
 /// <reference types="@webgpu/types" />
 
 import {
+  Context,
+  MatrixSource,
   VertexSource,
   TextureSource,
   autoLayout,
-  Context,
-  useGPUResource,
-  useGPUAction,
   useProp,
   useUnitProp,
+  useGPUResource,
+  useGPUAction,
 } from "@gpu-fu/gpu-fu"
 
 import shaderModuleCode from "./RenderUV.wgsl"
 
 export default function RenderUV(ctx: Context) {
+  const [cameraSource, setCameraMatrixSource] = useUnitProp<MatrixSource>(ctx)
   const [vertexSource, setVertexSource] = useUnitProp<VertexSource>(ctx)
   const [textureSource, setTextureSource] = useUnitProp<TextureSource>(ctx)
   const [renderTarget, setRenderTarget] = useProp<GPUTexture>(ctx)
 
+  const cameraSourceAsGPUBuffer = cameraSource?.cameraSourceAsGPUBuffer
   const textureSourceAsGPUTexture = textureSource?.textureSourceAsGPUTexture
 
   const shaderModule = useGPUResource(
@@ -36,7 +39,9 @@ export default function RenderUV(ctx: Context) {
       ctx.device.createRenderPipeline({
         vertex: {
           module: shaderModule,
-          entryPoint: "vertexRenderUV",
+          entryPoint: cameraSourceAsGPUBuffer
+            ? "vertexRenderUVWithMatrix"
+            : "vertexRenderUV",
           buffers: [
             {
               arrayStride: vertexSource.vertexSourceStrideBytes,
@@ -67,6 +72,12 @@ export default function RenderUV(ctx: Context) {
         },
         primitive: {
           topology: "triangle-list",
+          // TODO: Configurable `cullMode`
+        },
+        depthStencil: {
+          depthWriteEnabled: true,
+          depthCompare: "less",
+          format: "depth24plus",
         },
         layout: autoLayout(),
       }),
@@ -85,24 +96,49 @@ export default function RenderUV(ctx: Context) {
 
   const bindGroup = useGPUResource(
     ctx,
-    (ctx) =>
-      renderPipeline &&
-      textureSourceAsGPUTexture &&
-      ctx.device.createBindGroup({
-        layout: renderPipeline.getBindGroupLayout(0),
-        entries: [
-          {
-            binding: 0,
-            resource: sampler,
-          },
-          {
-            binding: 1,
-            resource: textureSourceAsGPUTexture.createView(),
-          },
-        ],
-      }),
+    (ctx) => {
+      if (!renderPipeline) return
+      if (!textureSourceAsGPUTexture) return
 
-    [renderPipeline, textureSourceAsGPUTexture, sampler],
+      const entries: GPUBindGroupEntry[] = [
+        {
+          binding: 1,
+          resource: sampler,
+        },
+        {
+          binding: 2,
+          resource: textureSourceAsGPUTexture.createView(),
+        },
+      ]
+      if (cameraSourceAsGPUBuffer)
+        entries.unshift({
+          binding: 0,
+          resource: { buffer: cameraSourceAsGPUBuffer },
+        })
+
+      return ctx.device.createBindGroup({
+        layout: renderPipeline.getBindGroupLayout(0),
+        entries,
+      })
+    },
+
+    [
+      renderPipeline,
+      cameraSourceAsGPUBuffer,
+      textureSourceAsGPUTexture,
+      sampler,
+    ],
+  )
+
+  const depthTexture = useGPUResource(
+    ctx,
+    (ctx) =>
+      ctx.device.createTexture({
+        size: [300, 300], // TODO: somehow get from canvas client size
+        format: "depth24plus",
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+      }),
+    [],
   )
 
   useGPUAction(
@@ -123,6 +159,12 @@ export default function RenderUV(ctx: Context) {
             storeOp: "store" as GPUStoreOp,
           },
         ],
+        depthStencilAttachment: {
+          view: depthTexture.createView(),
+          depthClearValue: 1.0,
+          depthLoadOp: "clear" as GPULoadOp,
+          depthStoreOp: "store" as GPUStoreOp,
+        },
       })
       passEncoder.setPipeline(renderPipeline)
       passEncoder.setVertexBuffer(0, vertexSource.vertexSourceAsGPUBuffer)
@@ -134,6 +176,7 @@ export default function RenderUV(ctx: Context) {
   )
 
   return {
+    setCameraMatrixSource,
     setTextureSource,
     setVertexSource,
     setRenderTarget,

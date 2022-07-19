@@ -22,7 +22,7 @@ export default function runDemo(renderFn: UnitFn<Render>) {
 function runDemoInner(setupFn: SetupFn) {
   ;(async () => {
     const device = await getDevice()
-    const canvasContext = await getCanvasContext("canvas.main", device)
+    const canvasContext = await getCanvasContext(getDemoCanvas(), device)
 
     const frameFn = setupFn(device, canvasContext)
 
@@ -49,15 +49,19 @@ async function getDevice(
   return gpu.requestDevice()
 }
 
-async function getCanvasContext(
-  querySelector: string,
-  device: GPUDevice,
-): Promise<GPUCanvasContext> {
+export function getDemoCanvas(): HTMLCanvasElement {
   const canvas = document.querySelector(
-    querySelector,
+    "canvas.main",
   ) as HTMLCanvasElement | null
   if (!canvas) throw new Error("The main canvas wasn't found in the HTML!")
 
+  return canvas
+}
+
+async function getCanvasContext(
+  canvas: HTMLCanvasElement,
+  device: GPUDevice,
+): Promise<GPUCanvasContext> {
   const canvasContext = canvas.getContext("webgpu") as GPUCanvasContext | null
   if (!canvasContext) throw new Error("Failed to get a WebGPU canvas context!")
 

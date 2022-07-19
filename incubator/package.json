@@ -10,7 +10,8 @@
     "trailingComma": "all"
   },
   "dependencies": {
-    "@gpu-fu/gpu-fu": "^0.1.0"
+    "@gpu-fu/gpu-fu": "^0.1.0",
+    "gl-matrix": "^3.4.3"
   },
   "devDependencies": {
     "@webgpu/types": "^0.1.21",
