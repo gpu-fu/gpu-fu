@@ -19,3 +19,12 @@ And so is `gpu-fu` - it's still being defined and built out.
 As a consequence, usage in real-world applications is discouraged at this time, but if you're interested in collaborating on `gpu-fu`, new contributors are welcome! Reach out and file an issue ticket to discuss the feature you want to build.
 
 Help shape the future of WebGPU applications!
+
+# Learning Resources
+
+Because using `gpu-fu` implies writing WebGPU code, general learning resources for WebGPU can be very helpful:
+
+- [WebGPU W3C Working Draft](https://www.w3.org/TR/webgpu/) - the current draft of the WebGPU specification (a dense read, and not always fully explanatory, but a good reference on what specific facilities are available).
+- [WebGPU Samples](https://github.com/austinEng/webgpu-samples) - a collection of sample programs showing various features or patterns of use for WebGPU.
+- [WebGPU Best Practices](https://github.com/toji/webgpu-best-practices) - a small collection of essays giving tips on specific subjects in order to help readers avoid common pitfalls.
+- [Learn Wgpu](https://sotrh.github.io/learn-wgpu/#what-is-wgpu) - a Rust-language tutorial for WebGPU (include some Rust specifics that are irrelevant here).
