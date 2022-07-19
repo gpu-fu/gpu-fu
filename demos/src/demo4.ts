@@ -15,7 +15,7 @@ runDemo((ctx) => {
   const textureSource = useUnit(ctx, TextureSourceBitmapFromURL)
   textureSource.url.set("./assets/fireweed.jpg")
 
-  cameraSource.setCanvas(getDemoCanvas())
+  cameraSource.canvas.set(getDemoCanvas())
 
   const { renderTarget, ...render } = useUnit(ctx, RenderUV)
   render.cameraSource.set(cameraSource)

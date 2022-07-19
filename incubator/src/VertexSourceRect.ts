@@ -24,7 +24,6 @@ export default function VertexSourceRect(ctx: Context) {
   useGPUAction(
     ctx,
     (ctx) => {
-      const currentAspectFillRatio = aspectFillRatio()
       if (!buffer) return
 
       var uMin = 0
@@ -32,12 +31,12 @@ export default function VertexSourceRect(ctx: Context) {
       var vMin = 0
       var vMax = 1
 
-      if (currentAspectFillRatio) {
-        if (currentAspectFillRatio < 1) {
-          vMin = 0.5 - 0.5 * currentAspectFillRatio
+      if (aspectFillRatio.current) {
+        if (aspectFillRatio.current < 1) {
+          vMin = 0.5 - 0.5 * aspectFillRatio.current
           vMax = 1 - vMin
         } else {
-          uMin = 0.5 - 0.5 / currentAspectFillRatio
+          uMin = 0.5 - 0.5 / aspectFillRatio.current
           uMax = 1 - uMin
         }
       }
@@ -55,7 +54,7 @@ export default function VertexSourceRect(ctx: Context) {
 
       ctx.device.queue.writeBuffer(buffer, 0, data, 0, data.length)
     },
-    [buffer, aspectFillRatio()],
+    [buffer, aspectFillRatio.current],
   )
 
   return {

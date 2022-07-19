@@ -17,6 +17,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
 
+    "target": "es6",
     "module": "es6",
     "moduleResolution": "node",
     "esModuleInterop": false,

@@ -46,13 +46,12 @@ function RenderColoredTriangle(ctx: Context) {
   useGPUAction(
     ctx,
     (ctx) => {
-      const currentRenderTarget = renderTarget()
-      if (!currentRenderTarget) return
+      if (!renderTarget.current) return
 
       const passEncoder = ctx.commandEncoder.beginRenderPass({
         colorAttachments: [
           {
-            view: currentRenderTarget.createView(),
+            view: renderTarget.current.createView(),
             clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
             loadOp: "clear" as GPULoadOp,
             storeOp: "store" as GPUStoreOp,
@@ -63,7 +62,7 @@ function RenderColoredTriangle(ctx: Context) {
       passEncoder.draw(3, 1, 0, 0)
       passEncoder.end()
     },
-    [renderTarget()],
+    [renderTarget.current],
   )
 
   return { renderTarget }

@@ -26,7 +26,7 @@ export function useUnitProp<U>(ctx: Context): Property<Unit<U> | undefined> {
 }
 
 export function useUnit<U>(ctx: Context, unitFn: UnitFn<U>): Unit<U> {
-  return ctx._useUnitProp<Unit<U>>(() => unit(ctx.device, unitFn))()
+  return ctx._useUnitProp<Unit<U>>(() => unit(ctx.device, unitFn)).current
 }
 
 export function useGPUResource<T extends MaybeDestroyableGPUResource>(

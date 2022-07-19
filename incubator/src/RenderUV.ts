@@ -20,8 +20,9 @@ export default function RenderUV(ctx: Context) {
   const textureSource = useUnitProp<TextureSource>(ctx)
   const renderTarget = useProp<GPUTexture>(ctx)
 
-  const cameraSourceAsGPUBuffer = cameraSource()?.cameraSourceAsGPUBuffer
-  const textureSourceAsGPUTexture = textureSource()?.textureSourceAsGPUTexture
+  const cameraSourceAsGPUBuffer = cameraSource.current?.cameraSourceAsGPUBuffer
+  const textureSourceAsGPUTexture =
+    textureSource.current?.textureSourceAsGPUTexture
 
   const shaderModule = useGPUResource(
     ctx,
@@ -35,8 +36,7 @@ export default function RenderUV(ctx: Context) {
   const renderPipeline = useGPUResource(
     ctx,
     (ctx) => {
-      const currentVertexSource = vertexSource()
-      if (!currentVertexSource) return
+      if (!vertexSource.current) return
 
       return ctx.device.createRenderPipeline({
         vertex: {
@@ -46,16 +46,16 @@ export default function RenderUV(ctx: Context) {
             : "vertexRenderUV",
           buffers: [
             {
-              arrayStride: currentVertexSource.vertexSourceStrideBytes,
+              arrayStride: vertexSource.current.vertexSourceStrideBytes,
               attributes: [
                 {
                   shaderLocation: 0,
-                  offset: currentVertexSource.vertexSourceXYZWOffsetBytes,
+                  offset: vertexSource.current.vertexSourceXYZWOffsetBytes,
                   format: "float32x4" as GPUVertexFormat,
                 },
                 {
                   shaderLocation: 1,
-                  offset: currentVertexSource.vertexSourceUVOffsetBytes,
+                  offset: vertexSource.current.vertexSourceUVOffsetBytes,
                   format: "float32x2" as GPUVertexFormat,
                 },
               ],
@@ -84,7 +84,7 @@ export default function RenderUV(ctx: Context) {
         layout: autoLayout(),
       })
     },
-    [shaderModule, vertexSource()],
+    [shaderModule, vertexSource.current],
   )
 
   const sampler = useGPUResource(
@@ -147,17 +147,15 @@ export default function RenderUV(ctx: Context) {
   useGPUAction(
     ctx,
     (ctx) => {
-      const currentVertexSource = vertexSource()
-      const currentRenderTarget = renderTarget()
-      if (!currentVertexSource) return
-      if (!currentRenderTarget) return
+      if (!vertexSource.current) return
+      if (!renderTarget.current) return
       if (!renderPipeline) return
       if (!bindGroup) return
 
       const passEncoder = ctx.commandEncoder.beginRenderPass({
         colorAttachments: [
           {
-            view: currentRenderTarget.createView(),
+            view: renderTarget.current.createView(),
             clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
             loadOp: "clear" as GPULoadOp,
             storeOp: "store" as GPUStoreOp,
@@ -173,13 +171,13 @@ export default function RenderUV(ctx: Context) {
       passEncoder.setPipeline(renderPipeline)
       passEncoder.setVertexBuffer(
         0,
-        currentVertexSource.vertexSourceAsGPUBuffer,
+        vertexSource.current.vertexSourceAsGPUBuffer,
       )
       passEncoder.setBindGroup(0, bindGroup)
-      passEncoder.draw(currentVertexSource.vertexSourceCount, 1, 0, 0)
+      passEncoder.draw(vertexSource.current.vertexSourceCount, 1, 0, 0)
       passEncoder.end()
     },
-    [vertexSource(), renderTarget(), renderPipeline, bindGroup],
+    [vertexSource.current, renderTarget.current, renderPipeline, bindGroup],
   )
 
   return {

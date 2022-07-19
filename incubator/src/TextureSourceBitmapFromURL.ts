@@ -12,17 +12,16 @@ export default function TextureSourceBitmapFromURL(ctx: Context) {
 
   useAsyncPropSetter(
     ctx,
-    imageBitmap.set,
+    imageBitmap.set.bind(imageBitmap),
     async (ctx) => {
-      const currentURL = url()
-      if (!currentURL) return
+      if (!url.current) return
       const img = document.createElement("img")
-      img.src = currentURL
+      img.src = url.current
       await img.decode()
       const imageBitmap = await createImageBitmap(img)
       return imageBitmap
     },
-    [url()],
+    [url.current],
   )
 
   return {

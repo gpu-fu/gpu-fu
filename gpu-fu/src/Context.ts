@@ -1,7 +1,7 @@
 /// <reference types="@webgpu/types" />
 
 import { Unit } from "./Unit"
-import { Property } from "./Property"
+import { Property, PropertyImplementation } from "./Property"
 
 export type MaybeDestroyableGPUResource =
   | undefined
@@ -42,7 +42,7 @@ export class ContextImplementation<U> {
   private _storeUnitsIndex = 0
   private _storeGPUActions: StoreItemGPUAction[] = []
   private _storeGPUActionsIndex = 0
-  private _needsUnitReRun = true
+  _needsUnitReRun = true // TODO: private
 
   private _nextStoreIndex() {
     const storeIndex = this._storeIndex
@@ -68,7 +68,7 @@ export class ContextImplementation<U> {
   runUnitIfNeeded(currentUnit: U) {
     var otherUnitsRan = false
     this._storeUnits.forEach((unitProp) => {
-      const unit = unitProp()
+      const unit = unitProp.current
       const otherUnitRan = unit?._ctx.runUnitIfNeeded(unit)
       if (otherUnitRan) otherUnitsRan = true
     })
@@ -87,7 +87,7 @@ export class ContextImplementation<U> {
 
   runGPUActionsIfNeeded(commandEncoder: GPUCommandEncoder) {
     this._storeUnits.forEach((unitProp) => {
-      const unit = unitProp()
+      const unit = unitProp.current
       unit?._ctx.runGPUActionsIfNeeded(commandEncoder)
     })
 
@@ -113,32 +113,12 @@ export class ContextImplementation<U> {
 
     // Otherwise create, store, and return a new prop/setProp pair,
     // using the provided initial state value or function.
-    const ctx = this
-
-    var value: T =
+    const prop: Property<T> = new PropertyImplementation<T, U>(
       typeof initialValue === "function"
         ? (initialValue as () => T)()
-        : initialValue
-
-    // TODO: Subscription tracking
-    const prop: Property<T> = (() => value) as Property<T>
-    prop.set = (newValue: T) => {
-      if (value !== newValue) {
-        value = newValue
-        ctx._needsUnitReRun = true
-      }
-    }
-    prop.change = (fn: (currentValue: T) => T) => {
-      const newValue = fn(value)
-      if (value !== newValue) {
-        value = newValue
-        ctx._needsUnitReRun = true
-      }
-    }
-    prop.mutate = (fn: (currentValue: T) => void) => {
-      fn(value)
-      ctx._needsUnitReRun = true // assume mutation always happens
-    }
+        : initialValue,
+      this,
+    )
 
     this._store[storeIndex] = prop
     return prop
@@ -155,32 +135,12 @@ export class ContextImplementation<U> {
 
     // Otherwise create, store, and return a new prop/setProp pair,
     // using the provided initial state value or function.
-    const ctx = this
-
-    var value: T =
+    const prop: Property<T> = new PropertyImplementation<T, U>(
       typeof initialValue === "function"
         ? (initialValue as () => T)()
-        : initialValue
-
-    // TODO: Subscription tracking
-    const prop: Property<T> = (() => value) as Property<T>
-    prop.set = (newValue: T) => {
-      if (value !== newValue) {
-        value = newValue
-        ctx._needsUnitReRun = true
-      }
-    }
-    prop.change = (fn: (currentValue: T) => T) => {
-      const newValue = fn(value)
-      if (value !== newValue) {
-        value = newValue
-        ctx._needsUnitReRun = true
-      }
-    }
-    prop.mutate = (fn: (currentValue: T) => void) => {
-      fn(value)
-      ctx._needsUnitReRun = true // assume mutation always happens
-    }
+        : initialValue,
+      this,
+    )
 
     this._storeUnits[storeIndex] = prop
     return prop

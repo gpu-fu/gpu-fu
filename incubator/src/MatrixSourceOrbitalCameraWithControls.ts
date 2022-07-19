@@ -4,13 +4,13 @@ import MatrixSourceOrbitalCamera from "./MatrixSourceOrbitalCamera"
 
 export default function MatrixSourceOrbitalCameraWithControls(ctx: Context) {
   const cameraSource = MatrixSourceOrbitalCamera(ctx)
-  const canvasProp = useProp<HTMLCanvasElement>(ctx)
+  const canvas = useProp<HTMLCanvasElement>(ctx)
 
   useEffect(
     ctx,
     (ctx) => {
-      const canvas = canvasProp()
-      if (!canvas) return () => {}
+      const currentCanvas = canvas.current
+      if (!currentCanvas) return () => {}
 
       const maxLatitudeRadians = Math.PI / 2 - 0.05
       var lastClientX = 0
@@ -24,8 +24,9 @@ export default function MatrixSourceOrbitalCameraWithControls(ctx: Context) {
 
         if (event.altKey) {
           const longitudeRadians =
-            cameraSource.cameraPosition().longitudeRadians
-          const latitudeRadians = cameraSource.cameraPosition().latitudeRadians
+            cameraSource.cameraPosition.current.longitudeRadians
+          const latitudeRadians =
+            cameraSource.cameraPosition.current.latitudeRadians
 
           // The 2D X axis is always perpendicular to the 3D Y axis, so changes
           // along the 2D X axis never affect the 3D Y axis.
@@ -67,36 +68,36 @@ export default function MatrixSourceOrbitalCameraWithControls(ctx: Context) {
       }
 
       const onPointerDown = (event: PointerEvent) => {
-        canvas.style.cursor = "grabbing"
+        currentCanvas.style.cursor = "grabbing"
 
         lastClientX = event.clientX
         lastClientY = event.clientY
 
-        canvas.addEventListener("pointermove", onPointerMove)
-        canvas.setPointerCapture(event.pointerId)
+        currentCanvas.addEventListener("pointermove", onPointerMove)
+        currentCanvas.setPointerCapture(event.pointerId)
       }
 
       const onPointerUp = (event: PointerEvent) => {
-        canvas.style.cursor = "grab"
+        currentCanvas.style.cursor = "grab"
 
-        canvas.removeEventListener("pointermove", onPointerMove)
+        currentCanvas.removeEventListener("pointermove", onPointerMove)
       }
 
-      canvas.style.cursor = "grab"
+      currentCanvas.style.cursor = "grab"
 
-      canvas.addEventListener("pointerdown", onPointerDown)
-      canvas.addEventListener("pointerup", onPointerUp)
+      currentCanvas.addEventListener("pointerdown", onPointerDown)
+      currentCanvas.addEventListener("pointerup", onPointerUp)
 
       return () => {
-        canvas.style.cursor = "auto"
+        currentCanvas.style.cursor = "auto"
 
-        canvas.removeEventListener("pointerdown", onPointerDown)
-        canvas.removeEventListener("pointerup", onPointerUp)
-        canvas.removeEventListener("pointermove", onPointerMove)
+        currentCanvas.removeEventListener("pointerdown", onPointerDown)
+        currentCanvas.removeEventListener("pointerup", onPointerUp)
+        currentCanvas.removeEventListener("pointermove", onPointerMove)
       }
     },
-    [canvasProp()],
+    [canvas.current],
   )
 
-  return Object.assign(cameraSource, { setCanvas: canvasProp.set })
+  return Object.assign(cameraSource, { canvas })
 }

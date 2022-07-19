@@ -47,17 +47,22 @@ export default function MatrixSourceCamera(ctx: Context) {
         zFar,
       )
 
-      const currentTarget = targetPosition()
-      const currentCamera = cameraPosition()
-
       const cameraMatrix = mat4.create()
-      mat4.translate(cameraMatrix, cameraMatrix, currentTarget)
-      mat4.rotateY(cameraMatrix, cameraMatrix, currentCamera.longitudeRadians)
-      mat4.rotateX(cameraMatrix, cameraMatrix, currentCamera.latitudeRadians)
+      mat4.translate(cameraMatrix, cameraMatrix, targetPosition.current)
+      mat4.rotateY(
+        cameraMatrix,
+        cameraMatrix,
+        cameraPosition.current.longitudeRadians,
+      )
+      mat4.rotateX(
+        cameraMatrix,
+        cameraMatrix,
+        cameraPosition.current.latitudeRadians,
+      )
       mat4.translate(
         cameraMatrix,
         cameraMatrix,
-        vec3.fromValues(0, 0, currentCamera.distance),
+        vec3.fromValues(0, 0, cameraPosition.current.distance),
       )
 
       const cameraPos = vec3.create()
@@ -66,7 +71,7 @@ export default function MatrixSourceCamera(ctx: Context) {
       const upward = vec3.fromValues(0, 1, 0)
 
       const viewMatrix = mat4.create() as Float32Array
-      mat4.lookAt(viewMatrix, cameraPos, currentTarget, upward)
+      mat4.lookAt(viewMatrix, cameraPos, targetPosition.current, upward)
 
       const projectionViewMatrix = mat4.create()
       mat4.multiply(projectionViewMatrix, projectionMatrix, viewMatrix)
@@ -75,7 +80,7 @@ export default function MatrixSourceCamera(ctx: Context) {
 
       ctx.device.queue.writeBuffer(buffer, 0, data, 0, data.length)
     },
-    [buffer, targetPosition(), cameraPosition()],
+    [buffer, targetPosition.current, cameraPosition.current],
   )
 
   return {
