@@ -1,75 +1,69 @@
 /// <reference types="@webgpu/types" />
 
-import { Context, VertexSource } from "@gpu-fu/gpu-fu"
+import { Context, useProp, useGPUAction, useGPUResource } from "@gpu-fu/gpu-fu"
 
-export default class VertexSourceRect implements VertexSource {
-  private _aspectFillRatio?: number
+const vertexSourceCount = 6
+const vertexSourceTotalBytes = 6 * 6 * 4
+const vertexSourceStrideBytes = 6 * 4
+const vertexSourceXYZWOffsetBytes = 0
+const vertexSourceUVOffsetBytes = 4 * 4
 
-  private _buffer?: GPUBuffer
-  private _bufferUpToDate = false
+export default function VertexSourceRect(ctx: Context) {
+  const [aspectFillRatio, setAspectFillRatio] = useProp<number>(ctx)
 
-  setAspectFillRatio(ratio: number) {
-    if (this._aspectFillRatio === ratio) return
-    this._aspectFillRatio = ratio
-    this._bufferUpToDate = false
-  }
+  const buffer = useGPUResource(
+    ctx,
+    (ctx) =>
+      ctx.device.createBuffer({
+        size: vertexSourceTotalBytes,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      }),
+    [],
+  )
 
-  private getBuffer(ctx: Context): GPUBuffer {
-    if (this._buffer) return this._buffer
+  useGPUAction(
+    ctx,
+    (ctx) => {
+      if (!buffer) return
 
-    const buffer = ctx.device.createBuffer({
-      size: this.vertexSourceTotalBytes(ctx),
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-    })
+      var uMin = 0
+      var uMax = 1
+      var vMin = 0
+      var vMax = 1
 
-    return (this._buffer = buffer)
-  }
-
-  private updateBuffer(ctx: Context) {
-    if (this._bufferUpToDate) return
-
-    var uMin = 0
-    var uMax = 1
-    var vMin = 0
-    var vMax = 1
-
-    if (this._aspectFillRatio) {
-      if (this._aspectFillRatio < 1) {
-        vMin = 0.5 - 0.5 * this._aspectFillRatio
-        vMax = 1 - vMin
-      } else {
-        uMin = 0.5 - 0.5 / this._aspectFillRatio
-        uMax = 1 - uMin
+      if (aspectFillRatio) {
+        if (aspectFillRatio < 1) {
+          vMin = 0.5 - 0.5 * aspectFillRatio
+          vMax = 1 - vMin
+        } else {
+          uMin = 0.5 - 0.5 / aspectFillRatio
+          uMax = 1 - uMin
+        }
       }
-    }
 
-    // prettier-ignore
-    const data = new Float32Array([
-    // (x, y, z, w),  (u, v)
-        1, 1, 0, 1, uMax, vMin,
-       -1,-1, 0, 1, uMin, vMax,
-       -1, 1, 0, 1, uMin, vMin,
-        1, 1, 0, 1, uMax, vMin,
-        1,-1, 0, 1, uMax, vMax,
-       -1,-1, 0, 1, uMin, vMax,
-    ])
+      // prettier-ignore
+      const data = new Float32Array([
+      // (x, y, z, w),  (u, v)
+          1, 1, 0, 1, uMax, vMin,
+         -1,-1, 0, 1, uMin, vMax,
+         -1, 1, 0, 1, uMin, vMin,
+          1, 1, 0, 1, uMax, vMin,
+          1,-1, 0, 1, uMax, vMax,
+         -1,-1, 0, 1, uMin, vMax,
+      ])
 
-    ctx.device.queue.writeBuffer(this.getBuffer(ctx), 0, data, 0, data.length)
+      ctx.device.queue.writeBuffer(buffer, 0, data, 0, data.length)
+    },
+    [buffer, aspectFillRatio],
+  )
 
-    this._bufferUpToDate = true
-  }
-
-  vertexSourceAsGPUBuffer(ctx: Context): GPUBuffer {
-    return this.getBuffer(ctx)
-  }
-
-  vertexSourceTotalBytes = (ctx: Context) => 6 * 6 * 4
-  vertexSourceStrideBytes = (ctx: Context) => 6 * 4
-  vertexSourceXYZWOffsetBytes = (ctx: Context) => 0
-  vertexSourceUVOffsetBytes = (ctx: Context) => 4 * 4
-
-  vertexSourceFrame(ctx: Context, frame: number) {
-    this.updateBuffer(ctx)
-    return 6
+  return {
+    setAspectFillRatio,
+    vertexSourceCount,
+    vertexSourceTotalBytes,
+    vertexSourceStrideBytes,
+    vertexSourceXYZWOffsetBytes,
+    vertexSourceUVOffsetBytes,
+    vertexSourceAsGPUBuffer: buffer,
   }
 }

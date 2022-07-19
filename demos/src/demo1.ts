@@ -2,63 +2,67 @@
 
 import runDemo from "./runDemo"
 
-import { Context, Render, autoLayout } from "@gpu-fu/gpu-fu"
-import { OutputCanvas } from "@gpu-fu/incubator"
+import {
+  Context,
+  autoLayout,
+  useProp,
+  useGPUResource,
+  useGPUAction,
+} from "@gpu-fu/gpu-fu"
 
 import shaderModuleCode from "./demo1.wgsl"
 
-runDemo(async (device, canvasContext) => {
-  const renderTriangle = new RenderColoredTriangle()
+runDemo(RenderColoredTriangle)
 
-  const output = new OutputCanvas(canvasContext)
-  output.addRender(renderTriangle)
+function RenderColoredTriangle(ctx: Context) {
+  const [renderTarget, setRenderTarget] = useProp<GPUTexture>(ctx)
 
-  return function frame(ctx, frame) {
-    output.outputFrame(ctx, frame)
-  }
-})
+  const renderPipeline = useGPUResource(
+    ctx,
+    (ctx) =>
+      ctx.device.createRenderPipeline({
+        vertex: {
+          module: ctx.device.createShaderModule({ code: shaderModuleCode }),
+          entryPoint: "vertexRenderColoredTriangle",
+        },
+        fragment: {
+          module: ctx.device.createShaderModule({ code: shaderModuleCode }),
+          entryPoint: "fragmentRenderColoredTriangle",
+          targets: [
+            {
+              // TODO: Remove this hard-coded value - get the real one somehow.
+              format: "rgba8unorm" as GPUTextureFormat,
+            },
+          ],
+        },
+        primitive: {
+          topology: "triangle-list",
+        },
+        layout: autoLayout(),
+      }),
+    [],
+  )
 
-class RenderColoredTriangle implements Render {
-  _renderPipeline?: GPURenderPipeline
-
-  getRenderPipeline(ctx: Context) {
-    if (this._renderPipeline) return this._renderPipeline
-
-    return (this._renderPipeline = ctx.device.createRenderPipeline({
-      vertex: {
-        module: ctx.device.createShaderModule({ code: shaderModuleCode }),
-        entryPoint: "vertexRenderColoredTriangle",
-      },
-      fragment: {
-        module: ctx.device.createShaderModule({ code: shaderModuleCode }),
-        entryPoint: "fragmentRenderColoredTriangle",
-        targets: [
+  useGPUAction(
+    ctx,
+    (ctx) => {
+      if (!renderTarget) return
+      const passEncoder = ctx.commandEncoder.beginRenderPass({
+        colorAttachments: [
           {
-            // TODO: Remove this hard-coded value - get the real one somehow.
-            format: "rgba8unorm" as GPUTextureFormat,
+            view: renderTarget.createView(),
+            clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+            loadOp: "clear" as GPULoadOp,
+            storeOp: "store" as GPUStoreOp,
           },
         ],
-      },
-      primitive: {
-        topology: "triangle-list",
-      },
-      layout: autoLayout(),
-    }))
-  }
+      })
+      passEncoder.setPipeline(renderPipeline)
+      passEncoder.draw(3, 1, 0, 0)
+      passEncoder.end()
+    },
+    [renderTarget],
+  )
 
-  renderFrame(ctx: Context, frame: number, target: GPUTexture): void {
-    const passEncoder = ctx.commandEncoder.beginRenderPass({
-      colorAttachments: [
-        {
-          view: target.createView(),
-          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-          loadOp: "clear" as GPULoadOp,
-          storeOp: "store" as GPUStoreOp,
-        },
-      ],
-    })
-    passEncoder.setPipeline(this.getRenderPipeline(ctx))
-    passEncoder.draw(3, 1, 0, 0)
-    passEncoder.end()
-  }
+  return { setRenderTarget }
 }
