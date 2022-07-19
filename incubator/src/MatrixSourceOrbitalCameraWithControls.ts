@@ -47,8 +47,8 @@ export default function MatrixSourceOrbitalCameraWithControls(ctx: Context) {
             (current) =>
               vec3.fromValues(
                 current[0] + deltaX3D,
-                current[1] + deltaX3D,
-                current[2] + deltaX3D,
+                current[1] + deltaY3D,
+                current[2] + deltaZ3D,
               ) as Float32Array,
           )
         } else {
