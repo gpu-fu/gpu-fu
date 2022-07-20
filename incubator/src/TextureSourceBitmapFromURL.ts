@@ -1,4 +1,4 @@
-import { Context, useAsyncPropSetter, useProp } from "@gpu-fu/gpu-fu"
+import { Context, useEffect } from "@gpu-fu/gpu-fu"
 import TextureSourceBitmap from "./TextureSourceBitmap"
 
 export default function TextureSourceBitmapFromURL(ctx: Context) {
@@ -10,19 +10,28 @@ export default function TextureSourceBitmapFromURL(ctx: Context) {
   // the assumption that the label will always be equal to the URL).
   const url = label
 
-  useAsyncPropSetter(
-    ctx,
-    imageBitmap.set.bind(imageBitmap),
-    async (ctx) => {
-      if (!url.current) return
-      const img = document.createElement("img")
-      img.src = url.current
-      await img.decode()
-      const imageBitmap = await createImageBitmap(img)
-      return imageBitmap
-    },
-    [url.current],
-  )
+  useEffect(ctx, (ctx) => {
+    const currentURL = url.current
+    console.log({ currentURL })
+    if (!currentURL) return () => {}
+
+    var cancelled = false
+
+    const img = document.createElement("img")
+    img.src = currentURL
+
+    img
+      .decode()
+      .then(() => (cancelled ? undefined : createImageBitmap(img)))
+      .then((newImageBitmap) => {
+        if (!cancelled && newImageBitmap) imageBitmap.set(newImageBitmap)
+      })
+      .catch(console.error)
+
+    return () => {
+      cancelled = true
+    }
+  })
 
   return {
     url,

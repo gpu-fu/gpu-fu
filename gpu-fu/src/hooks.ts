@@ -4,71 +4,49 @@ import {
   ContextForGPUAction,
   MaybeDestroyableGPUResource,
   ContextEmpty,
+  ContextImplementation,
 } from "./Context"
-import { Unit, UnitFn, NotAUnit, unit } from "./Unit"
-import { Property } from "./Property"
+import { Unit, UnitFn } from "./Unit"
+import { Property, PropertyImplementation, PropertyReadOnly } from "./Property"
 
-export function useProp<T>(ctx: Context): Property<NotAUnit<T | undefined>> {
-  return ctx._useProp<T | undefined>(undefined) as Property<
-    NotAUnit<T | undefined>
-  >
+export function useProp<T>(ctx: Context): Property<T | undefined> {
+  return ctx._useProp<T | undefined>(undefined) as Property<T | undefined>
 }
 
 export function useInitializedProp<T>(
   ctx: Context,
-  initialValue: (() => NotAUnit<T>) | NotAUnit<T>,
-): Property<NotAUnit<T>> {
-  return ctx._useProp<NotAUnit<T>>(initialValue)
-}
-
-export function useUnitProp<U>(ctx: Context): Property<Unit<U> | undefined> {
-  return ctx._useUnitProp<Unit<U> | undefined>(undefined)
+  initialValue: (() => T) | T,
+): Property<T> {
+  return ctx._useProp<T>(initialValue)
 }
 
 export function useUnit<U>(ctx: Context, unitFn: UnitFn<U>): Unit<U> {
-  return ctx._useUnitProp<Unit<U>>(() => unit(ctx.device, unitFn)).current
+  const unitProp = ctx._useProp<Unit<U>>(() => ({
+    ...unitFn(ctx),
+    _ctx: ctx as ContextImplementation,
+  }))
+
+  return (unitProp as PropertyImplementation<Unit<U>>)._current
 }
 
 export function useGPUResource<T extends MaybeDestroyableGPUResource>(
   ctx: Context,
   create: (ctx: ContextForGPUResource) => T,
-  deps: Array<unknown>,
-): T {
-  return ctx._useGPUResource<T>(create, deps)
+): PropertyReadOnly<T> {
+  return ctx._useGPUResource<T>(create)
 }
 
-export function useGPUAction(
+export function useGPUUpdate(
+  producedProps: PropertyReadOnly<unknown>[],
   ctx: Context,
   action: (ctx: ContextForGPUAction) => void,
-  deps: Array<unknown>,
 ): void {
-  ctx._useGPUAction(action, deps)
+  ctx._useGPUUpdate(producedProps, action)
 }
 
-export function useEffect<T>(
+export function useEffect(
   ctx: Context,
   effect: (ctx: ContextEmpty) => (() => void) | undefined,
-  deps: Array<unknown>,
 ) {
-  return ctx._useEffect(effect, deps)
-}
-
-export function useAsyncPropSetter<T>(
-  ctx: Context,
-  setPropFn: (newValue: T) => unknown,
-  effect: (ctx: ContextEmpty) => Promise<T>,
-  deps: Array<unknown>,
-) {
-  return ctx._useEffect((ctx) => {
-    var cancelled = false
-    effect(ctx)
-      .then((value) => cancelled || setPropFn(value))
-      .catch((error) => {
-        console.error(error)
-        cancelled = true
-      })
-    return () => {
-      cancelled = true
-    }
-  }, deps)
+  return ctx._useEffect(effect)
 }

@@ -1,5 +1,7 @@
 /// <reference types="@webgpu/types" />
 
+import { PropertyReadOnly } from "./Property"
+
 export default interface TextureSource {
-  textureSourceAsGPUTexture: GPUTexture
+  textureSourceAsGPUTexture: PropertyReadOnly<GPUTexture | undefined>
 }

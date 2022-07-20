@@ -5,11 +5,9 @@ export {
   useProp,
   useInitializedProp,
   useUnit,
-  useUnitProp,
   useGPUResource,
-  useGPUAction,
+  useGPUUpdate,
   useEffect,
-  useAsyncPropSetter,
 } from "./src/hooks"
 
 export { default as TextureSource } from "./src/TextureSource"
