@@ -4,7 +4,6 @@ import {
   Context,
   Unit,
   TextureSource,
-  autoLayout,
   useGPUResource,
   useProp,
   useGPUUpdate,
@@ -87,13 +86,13 @@ export default function TextureFilterConvolve(ctx: Context) {
     }
 
     return ctx.device.createComputePipeline({
+      layout: "auto",
       compute: {
         module: ctx.device.createShaderModule({
           code: shaderModuleCode,
         }),
         entryPoint: "computeTextureFilterConvolve3x3",
       },
-      layout: autoLayout(),
     })
   })
 
@@ -156,7 +155,7 @@ export default function TextureFilterConvolve(ctx: Context) {
     const passEncoder = ctx.commandEncoder.beginComputePass()
     passEncoder.setPipeline(computePipeline.current)
     passEncoder.setBindGroup(0, bindGroup.current)
-    passEncoder.dispatch(
+    passEncoder.dispatchWorkgroups(
       (textureSource.current?.textureSourceAsGPUTexture.current?.width || 850) / // TODO: remove fallback value
         workGroupSizeX,
       (textureSource.current?.textureSourceAsGPUTexture.current?.height ||

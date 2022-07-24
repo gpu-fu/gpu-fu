@@ -69,6 +69,7 @@ async function getCanvasContext(
     device,
     format: getPreferredCanvasFormat(),
     alphaMode: "opaque",
+    compositingAlphaMode: "opaque",
   })
 
   return canvasContext

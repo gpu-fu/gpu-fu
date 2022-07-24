@@ -2,13 +2,7 @@
 
 import runDemo from "./runDemo"
 
-import {
-  Context,
-  autoLayout,
-  useProp,
-  useGPUResource,
-  useGPUUpdate,
-} from "@gpu-fu/gpu-fu"
+import { Context, useProp, useGPUResource, useGPUUpdate } from "@gpu-fu/gpu-fu"
 
 import shaderModuleCode from "./demo1.wgsl"
 
@@ -19,6 +13,8 @@ function RenderColoredTriangle(ctx: Context) {
 
   const renderPipeline = useGPUResource(ctx, (ctx) => {
     return ctx.device.createRenderPipeline({
+      layout: "auto",
+      primitive: { topology: "triangle-list" },
       vertex: {
         module: ctx.device.createShaderModule({ code: shaderModuleCode }),
         entryPoint: "vertexRenderColoredTriangle",
@@ -33,10 +29,6 @@ function RenderColoredTriangle(ctx: Context) {
           },
         ],
       },
-      primitive: {
-        topology: "triangle-list",
-      },
-      layout: autoLayout(),
     })
   })
 

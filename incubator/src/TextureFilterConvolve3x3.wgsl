@@ -3,16 +3,16 @@
 @group(0) @binding(2) var texture_out: texture_storage_2d<rgba8unorm, write>;
 
 struct Kernel3x3 {
-  bias: f32;
-  aa: f32;
-  ba: f32;
-  ca: f32;
-  ab: f32;
-  bb: f32;
-  cb: f32;
-  ac: f32;
-  bc: f32;
-  cc: f32;
+  bias: f32,
+  aa: f32,
+  ba: f32,
+  ca: f32,
+  ab: f32,
+  bb: f32,
+  cb: f32,
+  ac: f32,
+  bc: f32,
+  cc: f32,
 }
 
 // TODO: What is the most likely optimal workgroup size?

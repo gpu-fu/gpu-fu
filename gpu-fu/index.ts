@@ -15,5 +15,3 @@ export { default as TextureFilter } from "./src/TextureFilter"
 export { default as VertexSource } from "./src/VertexSource"
 export { default as MatrixSource } from "./src/MatrixSource"
 export { default as Render } from "./src/Render"
-
-export { autoLayout } from "./src/utils"

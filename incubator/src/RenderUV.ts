@@ -6,7 +6,6 @@ import {
   MatrixSource,
   VertexSource,
   TextureSource,
-  autoLayout,
   useProp,
   useGPUResource,
   useGPUUpdate,
@@ -30,6 +29,11 @@ export default function RenderUV(ctx: Context) {
     if (!vertexSource.current) return
 
     return ctx.device.createRenderPipeline({
+      layout: "auto",
+      primitive: {
+        topology: "triangle-list",
+        // TODO: Configurable `cullMode`
+      },
       vertex: {
         module: shaderModule.current,
         entryPoint: cameraSource.current?.cameraSourceAsGPUBuffer
@@ -63,16 +67,11 @@ export default function RenderUV(ctx: Context) {
           },
         ],
       },
-      primitive: {
-        topology: "triangle-list",
-        // TODO: Configurable `cullMode`
-      },
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: "less",
         format: "depth24plus",
       },
-      layout: autoLayout(),
     })
   })
 
