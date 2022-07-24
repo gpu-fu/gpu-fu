@@ -143,6 +143,9 @@ export default function TextureFilterConvolve(ctx: Context) {
   )
 
   useGPUUpdate([texture], ctx, (ctx) => {
+    // TODO: Remove the need for the following line here:
+    kernelBuffer.current
+
     if (!textureSource.current?.textureSourceAsGPUTexture.current) return
     if (!computePipeline.current) return
     if (!bindGroup.current) return

@@ -121,6 +121,10 @@ export default function RenderUV(ctx: Context) {
   )
 
   useGPUUpdate([renderTarget], ctx, (ctx) => {
+    // TODO: Remove the need for the following lines here:
+    cameraSource.current?.cameraSourceAsGPUBuffer.current
+    textureSource.current?.textureSourceAsGPUTexture.current
+
     if (!vertexSource.current) return
     if (!renderTarget.current) return
     if (!renderPipeline.current) return

@@ -1,5 +1,4 @@
 import { Context, useProp, useEffect } from "@gpu-fu/gpu-fu"
-import { vec3 } from "gl-matrix"
 import MatrixSourceOrbitalCamera from "./MatrixSourceOrbitalCamera"
 
 export default function MatrixSourceOrbitalCameraWithControls(ctx: Context) {
@@ -21,10 +20,8 @@ export default function MatrixSourceOrbitalCameraWithControls(ctx: Context) {
       lastClientY = event.clientY
 
       if (event.altKey) {
-        const longitudeRadians =
-          cameraSource.cameraPosition.current.longitudeRadians
-        const latitudeRadians =
-          cameraSource.cameraPosition.current.latitudeRadians
+        const { longitudeRadians, latitudeRadians } =
+          cameraSource.cameraPosition.getNonReactively()
 
         // The 2D X axis is always perpendicular to the 3D Y axis, so changes
         // along the 2D X axis never affect the 3D Y axis.

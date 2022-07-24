@@ -75,4 +75,8 @@ export class DerivedImplementation<T> implements Derived<T> {
 
     return this._cachedResult as T
   }
+
+  getNonReactively(): T {
+    return this._cachedResult as T
+  }
 }

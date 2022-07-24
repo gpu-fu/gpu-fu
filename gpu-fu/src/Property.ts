@@ -4,6 +4,7 @@ import { Operation } from "./Operation"
 export type Property<T> = Pick<
   PropertyImplementation<T>,
   | "current"
+  | "getNonReactively"
   | "readOnly"
   | "set"
   | "setAndNotify"
@@ -17,6 +18,7 @@ export type Property<T> = Pick<
 export type PropertyReadOnly<T> = Pick<
   PropertyImplementation<T>,
   | "current"
+  | "getNonReactively"
   | "_runIfNeededAt"
   | "_produceIfNeededAt"
   | "_attachProducerOperation"
@@ -59,6 +61,11 @@ export class PropertyImplementation<T> implements Property<T> {
   }
 
   // Get the current value of the property.
+  //
+  // This can only be accessed from within a reactive context,
+  // since it implies that you want to track the property as a dependency
+  // dependency that will cause the reactive context to be called again.
+  // To get the current value non-reactively, call `getNonReactively` instead.
   get current(): T {
     const currentAction = this._ctx._currentAction
     if (!currentAction)
@@ -67,6 +74,14 @@ export class PropertyImplementation<T> implements Property<T> {
       )
     currentAction._attachDependency(this)
 
+    return this._current
+  }
+
+  // Get the current value of the property without dependency tracking.
+  // Unlike the `current` getter, this can be called anywhere,
+  // both in contexts which are reactive and non-reactive.
+  // But if called in a reactive context, there is no dependency link created.
+  getNonReactively(): T {
     return this._current
   }
 
