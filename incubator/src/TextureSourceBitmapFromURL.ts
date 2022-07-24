@@ -2,8 +2,7 @@ import { Context, useEffect } from "@gpu-fu/gpu-fu"
 import TextureSourceBitmap from "./TextureSourceBitmap"
 
 export default function TextureSourceBitmapFromURL(ctx: Context) {
-  const { imageBitmap, label, textureSourceAsGPUTexture } =
-    TextureSourceBitmap(ctx)
+  const { imageBitmap, label, resultTexture } = TextureSourceBitmap(ctx)
 
   // Use the existing label property for a dual-purpose.
   // We use it as the URL to fetch from (though this implies
@@ -12,14 +11,12 @@ export default function TextureSourceBitmapFromURL(ctx: Context) {
 
   useEffect(ctx, (ctx) => {
     const currentURL = url.current
-    console.log({ currentURL })
     if (!currentURL) return () => {}
 
     var cancelled = false
 
     const img = document.createElement("img")
     img.src = currentURL
-
     img
       .decode()
       .then(() => (cancelled ? undefined : createImageBitmap(img)))
@@ -35,6 +32,6 @@ export default function TextureSourceBitmapFromURL(ctx: Context) {
 
   return {
     url,
-    textureSourceAsGPUTexture,
+    resultTexture,
   }
 }

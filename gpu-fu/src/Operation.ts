@@ -21,12 +21,19 @@ export class OperationImplementation implements Operation {
     this._deps.add(dep)
   }
 
-  _produceIfNeededAt(clockNumber: number) {
-    if (this._producedClockNumber >= clockNumber) return
+  _produceIfNeededAt(clockNumber: number): boolean {
+    if (this._producedClockNumber >= clockNumber) return false
+    const originalClockNumber = this._producedClockNumber
     this._producedClockNumber = clockNumber
 
-    this._deps.forEach((op) => op._runIfNeededAt(clockNumber))
-    this._deps.forEach((op) => op._produceIfNeededAt(clockNumber))
+    var depsChanged = false
+    this._deps.forEach((op) => {
+      if (op._runIfNeededAt(clockNumber)) depsChanged = true
+    })
+    this._deps.forEach((op) => {
+      if (op._produceIfNeededAt(clockNumber)) depsChanged = true
+    })
+    if (!depsChanged && originalClockNumber > 0) return false
 
     const outerAction = this._ctx._currentAction
     this._ctx._currentAction = this
@@ -34,5 +41,7 @@ export class OperationImplementation implements Operation {
     this._fn(this._ctx)
 
     this._ctx._currentAction = outerAction
+
+    return true
   }
 }

@@ -34,6 +34,6 @@ export default function TextureSourceBitmap(ctx: Context) {
   return {
     imageBitmap,
     label,
-    textureSourceAsGPUTexture: texture,
+    resultTexture: texture,
   }
 }

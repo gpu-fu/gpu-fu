@@ -1,25 +1,32 @@
 /// <reference types="@webgpu/types" />
 
-import { Context, useProp, useGPUUpdate, useGPUResource } from "@gpu-fu/gpu-fu"
+import {
+  Context,
+  useProp,
+  useGPUUpdate,
+  useGPUResource,
+  VertexBufferLayout,
+} from "@gpu-fu/gpu-fu"
 
-const vertexSourceCount = 6
-const vertexSourceTotalBytes = 6 * 6 * 4
-const vertexSourceStrideBytes = 6 * 4
-const vertexSourceXYZWOffsetBytes = 0
-const vertexSourceUVOffsetBytes = 4 * 4
+const resultVertexCount = 6
+const resultVertexBufferLayout: VertexBufferLayout = {
+  xyzwOffsetBytes: 0,
+  uvOffsetBytes: 4 * Float32Array.BYTES_PER_ELEMENT,
+  strideBytes: 6 * Float32Array.BYTES_PER_ELEMENT,
+}
 
 export default function VertexSourceRect(ctx: Context) {
   const aspectFillRatio = useProp<number>(ctx)
 
-  const buffer = useGPUResource(ctx, (ctx) =>
+  const resultVertexBuffer = useGPUResource(ctx, (ctx) =>
     ctx.device.createBuffer({
-      size: vertexSourceTotalBytes,
+      size: resultVertexCount * resultVertexBufferLayout.strideBytes,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     }),
   )
 
-  useGPUUpdate([buffer], ctx, (ctx) => {
-    if (!buffer.current) return
+  useGPUUpdate([resultVertexBuffer], ctx, (ctx) => {
+    if (!resultVertexBuffer.current) return
 
     var uMin = 0
     var uMax = 1
@@ -47,16 +54,18 @@ export default function VertexSourceRect(ctx: Context) {
          -1,-1, 0, 1, uMin, vMax,
       ])
 
-    ctx.device.queue.writeBuffer(buffer.current, 0, data, 0, data.length)
+    ctx.device.queue.writeBuffer(
+      resultVertexBuffer.current,
+      0,
+      data,
+      0,
+      data.length,
+    )
   })
 
   return {
     aspectFillRatio,
-    vertexSourceCount,
-    vertexSourceTotalBytes,
-    vertexSourceStrideBytes,
-    vertexSourceXYZWOffsetBytes,
-    vertexSourceUVOffsetBytes,
-    vertexSourceAsGPUBuffer: buffer,
+    resultVertexBuffer,
+    resultVertexBufferLayout,
   }
 }

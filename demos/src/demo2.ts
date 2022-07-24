@@ -12,7 +12,7 @@ runDemo((ctx) => {
   textureSource.url.set("./assets/fireweed.jpg")
 
   const { renderTarget, ...render } = useUnit(ctx, RenderTextureRect)
-  render.textureSource.set(textureSource)
+  render.textureSource.setFrom(textureSource.resultTexture)
 
   return { renderTarget }
 })

@@ -10,8 +10,5 @@ export {
   useEffect,
 } from "./src/hooks"
 
-export { default as TextureSource } from "./src/TextureSource"
-export { default as TextureFilter } from "./src/TextureFilter"
-export { default as VertexSource } from "./src/VertexSource"
-export { default as MatrixSource } from "./src/MatrixSource"
+export { default as VertexBufferLayout } from "./src/VertexBufferLayout"
 export { default as Render } from "./src/Render"

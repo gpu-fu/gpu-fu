@@ -1,13 +1,6 @@
 /// <reference types="@webgpu/types" />
 
-import {
-  Context,
-  Unit,
-  TextureSource,
-  useGPUResource,
-  useProp,
-  useGPUUpdate,
-} from "@gpu-fu/gpu-fu"
+import { Context, useGPUResource, useProp, useGPUUpdate } from "@gpu-fu/gpu-fu"
 
 import shaderModuleCode3x3 from "./TextureFilterConvolve3x3.wgsl"
 
@@ -18,7 +11,7 @@ interface SetKernelOptions {
 }
 
 export default function TextureFilterConvolve(ctx: Context) {
-  const textureSource = useProp<Unit<TextureSource>>(ctx)
+  const textureSource = useProp<GPUTexture>(ctx)
   const kernelData = useProp<Float32Array>(ctx)
 
   function setKernel3x3(
@@ -96,31 +89,27 @@ export default function TextureFilterConvolve(ctx: Context) {
     })
   })
 
-  const texture = useGPUResource(ctx, (ctx) =>
-    ctx.device.createTexture({
+  const resultTexture = useGPUResource(ctx, (ctx) => {
+    return ctx.device.createTexture({
       format: "rgba8unorm",
       size: {
-        width:
-          textureSource.current?.textureSourceAsGPUTexture.current?.width ||
-          850, // TODO: remove fallback value
-        height:
-          textureSource.current?.textureSourceAsGPUTexture.current?.height ||
-          1275, // TODO: remove fallback value
+        width: textureSource.current?.width || 850, // TODO: remove fallback value
+        height: textureSource.current?.height || 1275, // TODO: remove fallback value
       },
       usage:
         GPUTextureUsage.COPY_DST |
         GPUTextureUsage.STORAGE_BINDING |
         GPUTextureUsage.TEXTURE_BINDING,
-    }),
-  )
+    })
+  })
 
   const bindGroup = useGPUResource(
     ctx,
     (ctx) =>
       computePipeline.current &&
       kernelBuffer.current &&
-      textureSource.current?.textureSourceAsGPUTexture.current &&
-      texture.current &&
+      textureSource.current &&
+      resultTexture.current &&
       ctx.device.createBindGroup({
         layout: computePipeline.current.getBindGroupLayout(0),
         entries: [
@@ -130,22 +119,18 @@ export default function TextureFilterConvolve(ctx: Context) {
           },
           {
             binding: 1,
-            resource:
-              textureSource.current?.textureSourceAsGPUTexture.current?.createView(),
+            resource: textureSource.current?.createView(),
           },
           {
             binding: 2,
-            resource: texture.current.createView(),
+            resource: resultTexture.current.createView(),
           },
         ],
       }),
   )
 
-  useGPUUpdate([texture], ctx, (ctx) => {
-    // TODO: Remove the need for the following line here:
-    kernelBuffer.current
-
-    if (!textureSource.current?.textureSourceAsGPUTexture.current) return
+  useGPUUpdate([resultTexture], ctx, (ctx) => {
+    if (!textureSource.current) return
     if (!computePipeline.current) return
     if (!bindGroup.current) return
 
@@ -156,10 +141,9 @@ export default function TextureFilterConvolve(ctx: Context) {
     passEncoder.setPipeline(computePipeline.current)
     passEncoder.setBindGroup(0, bindGroup.current)
     passEncoder.dispatchWorkgroups(
-      (textureSource.current?.textureSourceAsGPUTexture.current?.width || 850) / // TODO: remove fallback value
+      (textureSource.current?.width || 850) / // TODO: remove fallback value
         workGroupSizeX,
-      (textureSource.current?.textureSourceAsGPUTexture.current?.height ||
-        1275) / // TODO: remove fallback value
+      (textureSource.current?.height || 1275) / // TODO: remove fallback value
         workGroupSizeY,
     )
     passEncoder.end()
@@ -168,6 +152,6 @@ export default function TextureFilterConvolve(ctx: Context) {
   return {
     textureSource,
     setKernel3x3,
-    textureSourceAsGPUTexture: texture,
+    resultTexture,
   }
 }

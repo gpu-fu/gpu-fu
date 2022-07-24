@@ -2,21 +2,19 @@
 
 import {
   Context,
-  Unit,
-  MatrixSource,
-  VertexSource,
-  TextureSource,
   useProp,
   useGPUResource,
   useGPUUpdate,
+  VertexBufferLayout,
 } from "@gpu-fu/gpu-fu"
 
 import shaderModuleCode from "./RenderUV.wgsl"
 
 export default function RenderUV(ctx: Context) {
-  const cameraSource = useProp<Unit<MatrixSource>>(ctx)
-  const vertexSource = useProp<Unit<VertexSource>>(ctx)
-  const textureSource = useProp<Unit<TextureSource>>(ctx)
+  const cameraMatrixBuffer = useProp<GPUBuffer>(ctx)
+  const vertexBuffer = useProp<GPUBuffer>(ctx)
+  const vertexBufferLayout = useProp<VertexBufferLayout>(ctx)
+  const textureSource = useProp<GPUTexture>(ctx)
   const renderTarget = useProp<GPUTexture>(ctx)
 
   const shaderModule = useGPUResource(ctx, (ctx) =>
@@ -26,7 +24,7 @@ export default function RenderUV(ctx: Context) {
   )
 
   const renderPipeline = useGPUResource(ctx, (ctx) => {
-    if (!vertexSource.current) return
+    if (!vertexBufferLayout.current) return
 
     return ctx.device.createRenderPipeline({
       layout: "auto",
@@ -36,21 +34,21 @@ export default function RenderUV(ctx: Context) {
       },
       vertex: {
         module: shaderModule.current,
-        entryPoint: cameraSource.current?.cameraSourceAsGPUBuffer
+        entryPoint: cameraMatrixBuffer.current
           ? "vertexRenderUVWithMatrix"
           : "vertexRenderUV",
         buffers: [
           {
-            arrayStride: vertexSource.current.vertexSourceStrideBytes,
+            arrayStride: vertexBufferLayout.current.strideBytes,
             attributes: [
               {
                 shaderLocation: 0,
-                offset: vertexSource.current.vertexSourceXYZWOffsetBytes,
+                offset: vertexBufferLayout.current.xyzwOffsetBytes,
                 format: "float32x4" as GPUVertexFormat,
               },
               {
                 shaderLocation: 1,
-                offset: vertexSource.current.vertexSourceUVOffsetBytes,
+                offset: vertexBufferLayout.current.uvOffsetBytes,
                 format: "float32x2" as GPUVertexFormat,
               },
             ],
@@ -84,7 +82,7 @@ export default function RenderUV(ctx: Context) {
 
   const bindGroup = useGPUResource(ctx, (ctx) => {
     if (!renderPipeline.current) return
-    if (!textureSource.current?.textureSourceAsGPUTexture.current) return
+    if (!textureSource.current) return
 
     const entries: GPUBindGroupEntry[] = [
       {
@@ -93,16 +91,13 @@ export default function RenderUV(ctx: Context) {
       },
       {
         binding: 2,
-        resource:
-          textureSource.current?.textureSourceAsGPUTexture.current.createView(),
+        resource: textureSource.current.createView(),
       },
     ]
-    if (cameraSource.current?.cameraSourceAsGPUBuffer)
+    if (cameraMatrixBuffer.current)
       entries.unshift({
         binding: 0,
-        resource: {
-          buffer: cameraSource.current?.cameraSourceAsGPUBuffer.current,
-        },
+        resource: { buffer: cameraMatrixBuffer.current },
       })
 
     return ctx.device.createBindGroup({
@@ -120,14 +115,13 @@ export default function RenderUV(ctx: Context) {
   )
 
   useGPUUpdate([renderTarget], ctx, (ctx) => {
-    // TODO: Remove the need for the following lines here:
-    cameraSource.current?.cameraSourceAsGPUBuffer.current
-    textureSource.current?.textureSourceAsGPUTexture.current
-
-    if (!vertexSource.current) return
+    if (!vertexBuffer.current) return
+    if (!vertexBufferLayout.current) return
     if (!renderTarget.current) return
     if (!renderPipeline.current) return
     if (!bindGroup.current) return
+    const vertexCount =
+      vertexBuffer.current.size / vertexBufferLayout.current.strideBytes
 
     const passEncoder = ctx.commandEncoder.beginRenderPass({
       colorAttachments: [
@@ -146,19 +140,17 @@ export default function RenderUV(ctx: Context) {
       },
     })
     passEncoder.setPipeline(renderPipeline.current)
-    passEncoder.setVertexBuffer(
-      0,
-      vertexSource.current.vertexSourceAsGPUBuffer.current,
-    )
+    passEncoder.setVertexBuffer(0, vertexBuffer.current)
     passEncoder.setBindGroup(0, bindGroup.current)
-    passEncoder.draw(vertexSource.current.vertexSourceCount, 1, 0, 0)
+    passEncoder.draw(vertexCount, 1, 0, 0)
     passEncoder.end()
   })
 
   return {
-    cameraSource,
+    cameraMatrixBuffer,
     textureSource,
-    vertexSource,
+    vertexBuffer,
+    vertexBufferLayout,
     renderTarget,
   }
 }

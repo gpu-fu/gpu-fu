@@ -29,6 +29,17 @@ export class ContextImplementation {
   _commandEncoder?: GPUCommandEncoder
 
   constructor(device: GPUDevice) {
+    // TODO: Remove this polyfill when Chromium is working properly.
+    // Current versions of Chromium on Linux leave these properties undefined,
+    // even though the type declarations say they are mandatory properties.
+    const originalCreateBuffer = device.createBuffer.bind(device)
+    ;(device as any).createBuffer = (descriptor: GPUBufferDescriptor) => {
+      const result = originalCreateBuffer(descriptor)
+      ;(result as any).size = descriptor.size
+      ;(result as any).usage = descriptor.usage
+      return result
+    }
+
     this._device = device
   }
 

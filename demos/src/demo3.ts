@@ -13,7 +13,7 @@ runDemo((ctx) => {
   textureSource.url.set("./assets/fireweed.jpg")
 
   const sobelHorizontal = useUnit(ctx, TextureFilterConvolve)
-  sobelHorizontal.textureSource.set(textureSource)
+  sobelHorizontal.textureSource.setFrom(textureSource.resultTexture)
   sobelHorizontal.setKernel3x3(
     // Sobel Horizontal Kernel (with scaling and bias to center on gray)
     [1, 2, 1],
@@ -23,7 +23,7 @@ runDemo((ctx) => {
   )
 
   const { renderTarget, ...render } = useUnit(ctx, RenderTextureRect)
-  render.textureSource.set(sobelHorizontal)
+  render.textureSource.setFrom(sobelHorizontal.resultTexture)
 
   return { renderTarget }
 })

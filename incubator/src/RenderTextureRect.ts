@@ -5,10 +5,12 @@ import RenderUV from "./RenderUV"
 import VertexSourceRect from "./VertexSourceRect"
 
 export default function RenderTextureRect(ctx: Context) {
-  const { textureSource, vertexSource, renderTarget } = RenderUV(ctx)
+  const { textureSource, vertexBuffer, vertexBufferLayout, renderTarget } =
+    RenderUV(ctx)
 
   const rect = useUnit(ctx, VertexSourceRect)
-  vertexSource.set(rect)
+  vertexBuffer.setFrom(rect.resultVertexBuffer)
+  vertexBufferLayout.set(rect.resultVertexBufferLayout)
 
   // TODO: Use the source texture and target texture aspect ratios
   // instead of hard-coding a number here.

@@ -79,7 +79,7 @@ export default function MatrixSourceCamera(ctx: Context) {
   return {
     targetPosition,
     cameraPosition,
-    cameraSourceAsGPUBuffer: buffer,
+    resultMatrixBuffer: buffer,
   }
 }
 

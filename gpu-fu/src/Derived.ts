@@ -57,10 +57,19 @@ export class DerivedImplementation<T> implements Derived<T> {
   }
 
   _produceIfNeededAt(clockNumber: number) {
-    if (this._producedClockNumber >= clockNumber) return
+    if (this._producedClockNumber >= clockNumber) return true
 
-    this._producerOperations.forEach((op) => op._produceIfNeededAt(clockNumber))
+    var depsChanged = false
+    this._deps.forEach((dep) => {
+      if (dep._produceIfNeededAt(clockNumber)) depsChanged = true
+    })
+    this._producerOperations.forEach((op) => {
+      if (op._produceIfNeededAt(clockNumber)) depsChanged = true
+    })
+    if (!depsChanged && this._producedClockNumber > 0) return false
+
     this._producedClockNumber = clockNumber
+    return true
   }
 
   get current(): T {

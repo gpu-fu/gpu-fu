@@ -10,17 +10,18 @@ import {
 
 import runDemo, { getDemoCanvas } from "./runDemo"
 runDemo((ctx) => {
-  const cameraSource = useUnit(ctx, MatrixSourceOrbitalCameraWithControls)
-  const vertexSource = useUnit(ctx, VertexSourceIcosahedron)
+  const camera = useUnit(ctx, MatrixSourceOrbitalCameraWithControls)
+  const icosahedron = useUnit(ctx, VertexSourceIcosahedron)
   const textureSource = useUnit(ctx, TextureSourceBitmapFromURL)
   textureSource.url.set("./assets/fireweed.jpg")
 
-  cameraSource.canvas.set(getDemoCanvas())
+  camera.canvas.set(getDemoCanvas())
 
   const { renderTarget, ...render } = useUnit(ctx, RenderUV)
-  render.cameraSource.set(cameraSource)
-  render.textureSource.set(textureSource)
-  render.vertexSource.set(vertexSource)
+  render.cameraMatrixBuffer.setFrom(camera.resultMatrixBuffer)
+  render.textureSource.setFrom(textureSource.resultTexture)
+  render.vertexBuffer.setFrom(icosahedron.resultVertexBuffer)
+  render.vertexBufferLayout.set(icosahedron.resultVertexBufferLayout)
 
   return { renderTarget }
 })
