@@ -1,26 +1,72 @@
 import { ContextImplementation } from "./Context"
+import { Operation } from "./Operation"
 
 export type Property<T> = Pick<
-  PropertyImplementation<T, unknown>,
-  "current" | "readOnly" | "set" | "change" | "mutate"
+  PropertyImplementation<T>,
+  | "current"
+  | "readOnly"
+  | "set"
+  | "setAndNotify"
+  | "change"
+  | "mutate"
+  | "_runIfNeededAt"
+  | "_produceIfNeededAt"
+  | "_attachProducerOperation"
 >
 
 export type PropertyReadOnly<T> = Pick<
-  PropertyImplementation<T, unknown>,
-  "current" | "readOnly"
+  PropertyImplementation<T>,
+  | "current"
+  | "_runIfNeededAt"
+  | "_produceIfNeededAt"
+  | "_attachProducerOperation"
 >
 
-export class PropertyImplementation<T, U> implements Property<T> {
-  private _ctx: ContextImplementation<U>
-  private _current: T
+export class PropertyImplementation<T> implements Property<T> {
+  private _ctx: ContextImplementation
+  _current: T // TODO: private
+  private _next: T
+  private _changeAtNextTick = false
+  private _changedClockNumber = 0
+  private _producedClockNumber = 0
+  private _producerOperations: Operation[] = []
 
-  constructor(initialValue: T, ctx: ContextImplementation<U>) {
+  constructor(initialValue: T, ctx: ContextImplementation) {
     this._current = initialValue
+    this._next = initialValue
     this._ctx = ctx
+  }
+
+  _attachProducerOperation(op: Operation): void {
+    this._producerOperations.push(op)
+  }
+
+  _runIfNeededAt(clockNumber: number): boolean {
+    if (!this._changeAtNextTick) return this._changedClockNumber >= clockNumber
+
+    this._current = this._next
+    this._changeAtNextTick = false
+    this._changedClockNumber = clockNumber
+
+    return true
+  }
+
+  _produceIfNeededAt(clockNumber: number) {
+    if (this._producedClockNumber >= clockNumber) return
+
+    this._producerOperations.forEach((op) => op._produceIfNeededAt(clockNumber))
+    this._producedClockNumber = clockNumber
   }
 
   // Get the current value of the property.
   get current(): T {
+    const currentAction = this._ctx._currentAction
+    if (!currentAction)
+      throw new Error(
+        "It's only possible to read properties from within a reactive context",
+      )
+    currentAction._attachDependency(this)
+
     return this._current
   }
 
@@ -43,8 +89,8 @@ export class PropertyImplementation<T, U> implements Property<T> {
   //
   // Usually you want to use `set` instead, which checks referential identity.
   setAndNotify(newValue: T) {
-    this._current = newValue
-    this._ctx._needsUnitReRun = true
+    this._next = newValue
+    this.notify()
   }
 
   // Use a function to change the value of the property based on the current
@@ -66,6 +112,10 @@ export class PropertyImplementation<T, U> implements Property<T> {
   // All reactive effects will be notified regardless of what the function does.
   mutate(fn: (currentValue: T) => unknown) {
     fn(this._current)
-    this._ctx._needsUnitReRun = true // assume mutation always happens
+    this.notify() // assume mutation always happens
+  }
+
+  private notify() {
+    this._changeAtNextTick = true
   }
 }

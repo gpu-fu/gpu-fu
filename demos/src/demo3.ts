@@ -1,6 +1,6 @@
 /// <reference types="@webgpu/types" />
 
-import { useEffect, useUnit } from "@gpu-fu/gpu-fu"
+import { useUnit } from "@gpu-fu/gpu-fu"
 import {
   TextureSourceBitmapFromURL,
   TextureFilterConvolve,

@@ -1,6 +1,6 @@
 /// <reference types="@webgpu/types" />
 
-import { Context, useGPUResource, useGPUAction } from "@gpu-fu/gpu-fu"
+import { Context, useGPUResource, useGPUUpdate } from "@gpu-fu/gpu-fu"
 
 const vertexSourceCount = 60
 const vertexSourceXYZWOffsetBytes = 0
@@ -9,30 +9,25 @@ const vertexSourceStrideBytes = 6 * 4
 const vertexSourceTotalBytes = vertexSourceCount * vertexSourceStrideBytes
 
 export default function VertexSourceIcosahedron(ctx: Context) {
-  const buffer = useGPUResource(
-    ctx,
-    (ctx) =>
-      ctx.device.createBuffer({
-        size: vertexSourceTotalBytes,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      }),
-    [],
+  const buffer = useGPUResource(ctx, (ctx) =>
+    ctx.device.createBuffer({
+      size: vertexSourceTotalBytes,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    }),
   )
 
-  useGPUAction(
-    ctx,
-    (ctx) => {
-      if (!buffer) return
+  useGPUUpdate([buffer], ctx, (ctx) => {
+    if (!buffer.current) return
 
-      var uMin = 0
-      var uMax = 1
-      var vMin = 0
-      var vMax = 1
+    var uMin = 0
+    var uMax = 1
+    var vMin = 0
+    var vMax = 1
 
-      const t = (1 + Math.sqrt(5)) / 2
+    const t = (1 + Math.sqrt(5)) / 2
 
-      // prettier-ignore
-      const data = new Float32Array([
+    // prettier-ignore
+    const data = new Float32Array([
       // (x, y, z, w),  (u, v)
           t, 1, 0, 1, uMax, vMin, // v0
           0, t, 1, 1, uMax, vMax, // v8
@@ -115,10 +110,8 @@ export default function VertexSourceIcosahedron(ctx: Context) {
          -t, 1, 0, 1, uMin, vMax, // v7
       ])
 
-      ctx.device.queue.writeBuffer(buffer, 0, data, 0, data.length)
-    },
-    [buffer],
-  )
+    ctx.device.queue.writeBuffer(buffer.current, 0, data, 0, data.length)
+  })
 
   return {
     vertexSourceCount,

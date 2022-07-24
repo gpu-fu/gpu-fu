@@ -18,8 +18,8 @@ export default class OutputCanvas {
   outputFrame(commandEncoder: GPUCommandEncoder) {
     const target = this._canvasContext.getCurrentTexture()
     this._renders.forEach((render) => {
-      render.renderTarget.set(target)
-      render.runFrame(commandEncoder)
+      render.renderTarget.setAndNotify(target)
+      render.runFrame(commandEncoder, [render.renderTarget])
     })
   }
 }

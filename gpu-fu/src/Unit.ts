@@ -1,43 +1,39 @@
 import { Context, ContextImplementation } from "./Context"
-
-export type UnitAny = {
-  _ctx: Context
-}
+import { PropertyReadOnly } from "./Property"
 
 export type Unit<U> = U & {
-  _ctx: ContextImplementation<U>
+  _ctx: ContextImplementation
 }
 
 export type UnitRoot<U> = U & {
-  _ctx: ContextImplementation<U>
-  runFrame: (commandEncoder: GPUCommandEncoder) => void
+  _ctx: ContextImplementation
+  runFrame: (
+    commandEncoder: GPUCommandEncoder,
+    outputs: PropertyReadOnly<unknown>[],
+  ) => void
 }
 
 export type UnitFn<U> = (ctx: Context) => U
 
-export type NotAUnit<T> = T extends UnitAny ? never : T
-
-export function unit<U>(
-  device: GPUDevice,
-  unitFn: (ctx: Context) => U,
-): Unit<U> {
-  const ctx = new ContextImplementation<U>(unitFn, device)
-  return { ...unitFn(ctx), _ctx: ctx }
-}
-
-function unitFrame<U>(unit: Unit<U>, commandEncoder: GPUCommandEncoder) {
-  const ctx = unit._ctx
-  ctx.runUnitIfNeeded(unit)
-  ctx.runGPUActionsIfNeeded(commandEncoder)
-}
-
 export function createUnitRoot<U>(
   device: GPUDevice,
-  unitFn: (ctx: Context) => U,
+  unitFn: UnitFn<U>,
 ): UnitRoot<U> {
-  const ctx = new ContextImplementation<U>(unitFn, device)
+  const ctx = new ContextImplementation(device)
   const unitRoot = { ...unitFn(ctx), _ctx: ctx } as UnitRoot<U>
-  unitRoot.runFrame = (commandEncoder: GPUCommandEncoder) =>
-    unitFrame(unitRoot, commandEncoder)
+  unitRoot.runFrame = (
+    commandEncoder: GPUCommandEncoder,
+    outputs: PropertyReadOnly<unknown>[],
+  ) => {
+    ctx._currentClockNumber += 1
+    ctx._commandEncoder = commandEncoder
+
+    const clockNumber = ctx._currentClockNumber
+    outputs.forEach((output) => output._produceIfNeededAt(clockNumber))
+
+    ctx._effects.forEach((effect) => effect._runIfNeededAt(clockNumber))
+
+    ctx._commandEncoder = undefined
+  }
   return unitRoot
 }
