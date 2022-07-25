@@ -50,3 +50,10 @@ export function useEffect(
 ) {
   return ctx._useEffect(effect)
 }
+
+export function useDerived<T>(
+  ctx: Context,
+  create: (ctx: ContextEmpty) => T,
+): PropertyReadOnly<T> {
+  return ctx._useDerived<T>(create)
+}

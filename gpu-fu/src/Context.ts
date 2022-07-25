@@ -40,6 +40,18 @@ export class ContextImplementation {
       return result
     }
 
+    // TODO: Remove this polyfill when Chromium is working properly.
+    // Current versions of Chromium on Linux leave these properties undefined,
+    // even though the type declarations say they are mandatory properties.
+    const originalCreateTexture = device.createTexture.bind(device)
+    ;(device as any).createTexture = (descriptor: GPUTextureDescriptor) => {
+      const result = originalCreateTexture(descriptor)
+      ;(result as any).width = (descriptor.size as any).width
+      ;(result as any).height = (descriptor.size as any).height
+      ;(result as any).format = descriptor.format
+      return result
+    }
+
     this._device = device
   }
 
@@ -78,12 +90,21 @@ export class ContextImplementation {
   _useEffect(fn: (ctx: ContextEmpty) => (() => void) | undefined) {
     this._effects.push(new EffectImplementation(this, fn as any))
   }
+
+  _useDerived<T>(fn: (ctx: ContextEmpty) => T): Derived<T> {
+    return new DerivedImplementation<T>(this, fn as any)
+  }
 }
 
 export type Context = Pick<
   ContextImplementation,
   // In the main function context, hooks are available.
-  "device" | "_useProp" | "_useGPUResource" | "_useGPUUpdate" | "_useEffect"
+  | "device"
+  | "_useProp"
+  | "_useGPUResource"
+  | "_useGPUUpdate"
+  | "_useEffect"
+  | "_useDerived"
 >
 
 export type ContextForGPUResource = Pick<

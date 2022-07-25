@@ -25,6 +25,7 @@ export default function RenderUV(ctx: Context) {
 
   const renderPipeline = useGPUResource(ctx, (ctx) => {
     if (!vertexBufferLayout.current) return
+    if (!renderTarget.current) return
 
     return ctx.device.createRenderPipeline({
       layout: "auto",
@@ -58,12 +59,7 @@ export default function RenderUV(ctx: Context) {
       fragment: {
         module: shaderModule.current,
         entryPoint: "fragmentRenderUV",
-        targets: [
-          {
-            // TODO: Remove this hard-coded value - get the real one somehow.
-            format: "rgba8unorm" as GPUTextureFormat,
-          },
-        ],
+        targets: [{ format: renderTarget.current.format }],
       },
       depthStencil: {
         depthWriteEnabled: true,
@@ -106,18 +102,24 @@ export default function RenderUV(ctx: Context) {
     })
   })
 
-  const depthTexture = useGPUResource(ctx, (ctx) =>
-    ctx.device.createTexture({
-      size: [300, 300], // TODO: somehow get from canvas client size
+  const depthStencil = useGPUResource(ctx, (ctx) => {
+    if (!renderTarget.current) return
+
+    return ctx.device.createTexture({
+      size: {
+        width: renderTarget.current.width,
+        height: renderTarget.current.height,
+      },
       format: "depth24plus",
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
-    }),
-  )
+    })
+  })
 
   useGPUUpdate([renderTarget], ctx, (ctx) => {
     if (!vertexBuffer.current) return
     if (!vertexBufferLayout.current) return
     if (!renderTarget.current) return
+    if (!depthStencil.current) return
     if (!renderPipeline.current) return
     if (!bindGroup.current) return
     const vertexCount =
@@ -133,7 +135,7 @@ export default function RenderUV(ctx: Context) {
         },
       ],
       depthStencilAttachment: {
-        view: depthTexture.current.createView(),
+        view: depthStencil.current.createView(),
         depthClearValue: 1.0,
         depthLoadOp: "clear" as GPULoadOp,
         depthStoreOp: "store" as GPUStoreOp,

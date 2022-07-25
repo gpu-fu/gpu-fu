@@ -1,6 +1,6 @@
 /// <reference types="@webgpu/types" />
 
-import { Context, useUnit } from "@gpu-fu/gpu-fu"
+import { Context, useDerived, useUnit } from "@gpu-fu/gpu-fu"
 import RenderUV from "./RenderUV"
 import VertexSourceRect from "./VertexSourceRect"
 
@@ -12,11 +12,17 @@ export default function RenderTextureRect(ctx: Context) {
   vertexBuffer.setFrom(rect.resultVertexBuffer)
   vertexBufferLayout.set(rect.resultVertexBufferLayout)
 
-  // TODO: Use the source texture and target texture aspect ratios
-  // instead of hard-coding a number here.
-  // This doesn't yet work on the latest version of chromium, because
-  // those chromium builds don't yet expose texture width and height.
-  rect.aspectFillRatio.set(850 / 1275)
+  // Determine the aspect ratio to fill based on the input and output sizes.
+  const aspectFillRatio = useDerived(ctx, (ctx) => {
+    if (!textureSource.current) return
+    if (!renderTarget.current) return
+
+    return (
+      (textureSource.current.width * renderTarget.current.height) /
+      (textureSource.current.height * renderTarget.current.width)
+    )
+  })
+  rect.aspectFillRatio.setFrom(aspectFillRatio)
 
   return { textureSource, renderTarget }
 }

@@ -90,11 +90,13 @@ export default function TextureFilterConvolve(ctx: Context) {
   })
 
   const resultTexture = useGPUResource(ctx, (ctx) => {
+    if (!textureSource.current) return
+
     return ctx.device.createTexture({
       format: "rgba8unorm",
       size: {
-        width: textureSource.current?.width || 850, // TODO: remove fallback value
-        height: textureSource.current?.height || 1275, // TODO: remove fallback value
+        width: textureSource.current.width,
+        height: textureSource.current.height,
       },
       usage:
         GPUTextureUsage.COPY_DST |
@@ -119,7 +121,7 @@ export default function TextureFilterConvolve(ctx: Context) {
           },
           {
             binding: 1,
-            resource: textureSource.current?.createView(),
+            resource: textureSource.current.createView(),
           },
           {
             binding: 2,
@@ -141,10 +143,8 @@ export default function TextureFilterConvolve(ctx: Context) {
     passEncoder.setPipeline(computePipeline.current)
     passEncoder.setBindGroup(0, bindGroup.current)
     passEncoder.dispatchWorkgroups(
-      (textureSource.current?.width || 850) / // TODO: remove fallback value
-        workGroupSizeX,
-      (textureSource.current?.height || 1275) / // TODO: remove fallback value
-        workGroupSizeY,
+      textureSource.current.width / workGroupSizeX,
+      textureSource.current.height / workGroupSizeY,
     )
     passEncoder.end()
   })

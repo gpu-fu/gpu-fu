@@ -8,6 +8,7 @@ export {
   useGPUResource,
   useGPUUpdate,
   useEffect,
+  useDerived,
 } from "./src/hooks"
 
 export { default as VertexBufferLayout } from "./src/VertexBufferLayout"

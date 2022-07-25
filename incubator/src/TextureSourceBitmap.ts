@@ -11,7 +11,10 @@ export default function TextureSourceBitmap(ctx: Context) {
 
     return ctx.device.createTexture({
       label: label.current,
-      size: [imageBitmap.current.width, imageBitmap.current.height, 1],
+      size: {
+        width: imageBitmap.current.width,
+        height: imageBitmap.current.height,
+      },
       format: "rgba8unorm",
       usage:
         GPUTextureUsage.TEXTURE_BINDING |
@@ -27,7 +30,10 @@ export default function TextureSourceBitmap(ctx: Context) {
     ctx.device.queue.copyExternalImageToTexture(
       { source: imageBitmap.current },
       { texture: texture.current },
-      [imageBitmap.current.width, imageBitmap.current.height],
+      {
+        width: imageBitmap.current.width,
+        height: imageBitmap.current.height,
+      },
     )
   })
 

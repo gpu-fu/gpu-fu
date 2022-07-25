@@ -12,6 +12,8 @@ function RenderColoredTriangle(ctx: Context) {
   const renderTarget = useProp<GPUTexture>(ctx)
 
   const renderPipeline = useGPUResource(ctx, (ctx) => {
+    if (!renderTarget.current) return
+
     return ctx.device.createRenderPipeline({
       layout: "auto",
       primitive: { topology: "triangle-list" },
@@ -22,18 +24,14 @@ function RenderColoredTriangle(ctx: Context) {
       fragment: {
         module: ctx.device.createShaderModule({ code: shaderModuleCode }),
         entryPoint: "fragmentRenderColoredTriangle",
-        targets: [
-          {
-            // TODO: Remove this hard-coded value - get the real one somehow.
-            format: "rgba8unorm" as GPUTextureFormat,
-          },
-        ],
+        targets: [{ format: renderTarget.current.format }],
       },
     })
   })
 
   useGPUUpdate([renderTarget], ctx, (ctx) => {
     if (!renderTarget.current) return
+    if (!renderPipeline.current) return
 
     const passEncoder = ctx.commandEncoder.beginRenderPass({
       colorAttachments: [
